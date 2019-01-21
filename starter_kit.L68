@@ -1,0 +1,351 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 21/01/2019 14:37:37
+
+00000000                             1  *-------------------------------------------------------
+00000000                             2  * Author: Michael Rainsford Ryan
+00000000                             3  * Student Number: C00239510
+00000000                             4  *-------------------------------------------------------
+00000000                             5  
+00000000                             6  
+00000000                             7  
+00001000                             8      org $1000
+00001000                             9  
+00001000                            10  *-------------------------------------------------------
+00001000                            11  *Choose to be a Worker or a God 
+00001000                            12  *https://www.avalon-rpg.com/
+00001000                            13  *-------------------------------------------------------
+00001000                            14  
+00001000                            15  *-------------------------------------------------------
+00001000                            16  *Validation values to be used, modify as needed
+00001000                            17  *Add additional validation values as required
+00001000                            18  *-------------------------------------------------------
+00001000  =00000000                 19  exit        EQU 0      used to exit assembly program
+00001000  =00000064                 20  min_feed    EQU 100    min feed requirement
+00001000  =00000001                 21  min_potions EQU 1      min number of potions
+00001000  =00000009                 22  max_potions EQU 9      max number of potions
+00001000  =00000006                 23  min_weapons EQU 6      min weapons
+00001000  =00000005                 24  win_point   EQU 5      points accumilated on win
+00001000  =00000008                 25  lose_point  EQU 8      points deducted on a loss
+00001000                            26  
+00001000  =00000064                 27  mine_loc    EQU 100    example for a hit
+00001000                            28  
+00001000                            29  
+00001000                            30  *Start of Game
+00001000                            31  start:
+00001000  11FC 0064 4000            32      move.b  #100,$4000 put score/health in memory location $4000
+00001006  47F8 4000                 33      lea     $4000,A3   assign address A3 to that memory location
+0000100A                            34  
+0000100A                            35  
+0000100A  6100 1FFE                 36      bsr     welcome    branch to the welcome subroutine
+0000100E  6100 2010                 37      bsr     input      branch to the input subroutine
+00001012  6100 1FEC                 38      bsr     game       branch to the game subroutine
+00001016                            39  *Game loop
+00003000                            40      org     $3000      the rest of the program is to be located from 3000 onwards
+00003000                            41  
+00003000                            42  *-------------------------------------------------------
+00003000                            43  *-------------------Game Subroutine---------------------
+00003000                            44  *-------------------------------------------------------
+00003000                            45  game:
+00003000  6100 0028                 46      bsr     gameloop   branch to gameloop subroutine
+00003004  4E75                      47      rts                return from game: subroutine
+00003006                            48            
+00003006                            49  end:
+00003006  FFFF FFFF                 50      simhalt
+0000300A                            51  
+0000300A                            52  *-------------------------------------------------------
+0000300A                            53  *-------------------Welcome Subroutine------------------
+0000300A                            54  *-------------------------------------------------------
+0000300A                            55  welcome:
+0000300A  6100 0192                 56      bsr     endl            branch to endl subroutine
+0000300E  43F9 000031B7             57      lea     welcome_msg,A1  assign message to address register A1
+00003014  103C 000E                 58      move.b  #14,D0          move literal 14 to DO
+00003018  4E4F                      59      trap    #15             trap and interpret value in D0
+0000301A  6100 0182                 60      bsr     endl            branch to endl subroutine
+0000301E  4E75                      61      rts                     return from welcome: subroutine
+00003020                            62  
+00003020                            63  *-------------------------------------------------------
+00003020                            64  *---------Gameplay Input Values Subroutine--------------
+00003020                            65  *-------------------------------------------------------    
+00003020                            66  input:
+00003020  6100 0080                 67      bsr     potions         branch to potion input subroutine
+00003024  6100 0096                 68      bsr     weapons        branch to weaponss input subroutine
+00003028  4E75                      69      rts
+0000302A                            70  
+0000302A                            71  *-------------------------------------------------------
+0000302A                            72  *----------------Gameloop (main loop)-------------------
+0000302A                            73  *------------------------------------------------------- 
+0000302A                            74  gameloop:
+0000302A  6100 0028                 75      bsr     update          branch to update game subroutine 
+0000302E  6100 0140                 76      bsr     clear_screen    clears the screen         
+00003032  6100 003A                 77      bsr     draw            branch to draw screen subroutine
+00003036  6100 0138                 78      bsr     clear_screen    clears the screen
+0000303A  6100 009A                 79      bsr     gameplay        branch to gameplay subroutine
+0000303E  6100 0130                 80      bsr     clear_screen    clears the screen
+00003042  6100 00B0                 81      bsr     hud             branch to display HUD subroutine
+00003046  6100 0128                 82      bsr     clear_screen    clears the screen
+0000304A  6100 0130                 83      bsr     replay          branch to replay game subroutine
+0000304E  6100 0120                 84      bsr     clear_screen    clears the screen
+00003052  4E75                      85      rts                     return from gameloop: subroutine
+00003054                            86  
+00003054                            87  *-------------------------------------------------------
+00003054                            88  *----------------Update Quest Progress------------------
+00003054                            89  *  Complete Quest
+00003054                            90  *------------------------------------------------------- 
+00003054                            91  update:
+00003054  6100 0148                 92      bsr     endl            print a CR and LF
+00003058  6100 00F8                 93      bsr     decorate        decorate with dots using a loop
+0000305C  43F9 00003330             94      lea     update_msg,A1   
+00003062  103C 000E                 95      move.b  #14,D0
+00003066  4E4F                      96      trap    #15
+00003068  6100 00E8                 97      bsr     decorate
+0000306C  4E75                      98      rts
+0000306E                            99  *-------------------------------------------------------
+0000306E                           100  *-----------------Draw Quest Updates--------------------
+0000306E                           101  * Draw the game progress information, status regarding
+0000306E                           102  * quest
+0000306E                           103  *------------------------------------------------------- 
+0000306E                           104  draw:
+0000306E  6100 012E                105      bsr     endl
+00003072  6100 00DE                106      bsr     decorate
+00003076  43F9 00003342            107      lea     draw_msg,A1
+0000307C  103C 000E                108      move.b  #14,D0
+00003080  4E4F                     109      trap    #15
+00003082  6100 00CE                110      bsr     decorate
+00003086  4E75                     111      rts
+00003088                           112  *-------------------------------------------------------
+00003088                           113  *------------------------Potions------------------------
+00003088                           114  * Input the ingredients for each potion. Ingredients costs 
+00003088                           115  * money. For an advanced mark you need to manage this 
+00003088                           116  * resource
+00003088                           117  *------------------------------------------------------- 
+00003088                           118  feed:
+00003088  6100 0114                119      bsr     endl
+0000308C  6100 00C4                120      bsr     decorate
+00003090  43F9 0000324E            121      lea     potion_msg,A1
+00003096  103C 000E                122      move.b  #14,D0
+0000309A  4E4F                     123      trap    #15
+0000309C  6100 00B4                124      bsr     decorate
+000030A0  4E75                     125      rts
+000030A2                           126  
+000030A2                           127  *-------------------------------------------------------
+000030A2                           128  *--------------------Potions Inventory---------------------
+000030A2                           129  * Number of potions to be used in a Quest 
+000030A2                           130  *------------------------------------------------------- 
+000030A2                           131  potions:
+000030A2  6100 00FA                132      bsr     endl
+000030A6  6100 00AA                133      bsr     decorate
+000030AA  43F9 0000329A            134      lea     potions_msg,A1
+000030B0  103C 000E                135      move.b  #14,D0
+000030B4  4E4F                     136      trap    #15
+000030B6  6100 009A                137      bsr     decorate
+000030BA  4E75                     138      rts
+000030BC                           139  
+000030BC                           140  *-------------------------------------------------------
+000030BC                           141  *-------------------------Weapons-----------------------
+000030BC                           142  * Number of weapons
+000030BC                           143  *-------------------------------------------------------   
+000030BC                           144  weapons:
+000030BC  6100 00E0                145      bsr     endl
+000030C0  6100 0090                146      bsr     decorate
+000030C4  43F9 000032AF            147      lea     weapons_msg,A1
+000030CA  103C 000E                148      move.b  #14,D0
+000030CE  4E4F                     149      trap    #15
+000030D0  6100 0080                150      bsr     decorate
+000030D4  4E75                     151      rts
+000030D6                           152  
+000030D6                           153  *-------------------------------------------------------
+000030D6                           154  *---Game Play (Quest Progress)--------------------------
+000030D6                           155  *------------------------------------------------------- 
+000030D6                           156  gameplay:
+000030D6  6100 00C6                157      bsr     endl
+000030DA  6100 0076                158      bsr     decorate
+000030DE  43F9 00003321            159      lea     gameplay_msg,A1
+000030E4  103C 000E                160      move.b  #14,D0
+000030E8  4E4F                     161      trap    #15
+000030EA  6100 0066                162      bsr     decorate
+000030EE  6100 0026                163      bsr     collision
+000030F2  4E75                     164      rts
+000030F4                           165  
+000030F4                           166  *-------------------------------------------------------
+000030F4                           167  *-----------------Heads Up Display (Score)--------------
+000030F4                           168  * Retrieves the score from memory location
+000030F4                           169  *-------------------------------------------------------   
+000030F4                           170  hud:
+000030F4                           171  
+000030F4  6100 00A8                172      bsr     endl
+000030F8  6100 0058                173      bsr     decorate
+000030FC  43F9 0000338E            174      lea     hud_msg,A1
+00003102  103C 000E                175      move.b  #14,D0
+00003106  4E4F                     176      trap    #15
+00003108  1213                     177      move.b  (A3),D1     retrieve the value A3 point to and move to D1
+0000310A  103C 0003                178      move.b  #3,D0       move literal 3 to D0
+0000310E  4E4F                     179      trap    #15         intrepret value in D0, which 3 which displays D1
+00003110  6100 0040                180      bsr     decorate
+00003114  4E75                     181      rts
+00003116                           182  
+00003116                           183  *-------------------------------------------------------
+00003116                           184  *-----------------------Being Attacked------------------
+00003116                           185  * This could be used for collision detection
+00003116                           186  *-------------------------------------------------------
+00003116                           187  collision:
+00003116  123C 0064                188      move.b  #mine_loc,D1
+0000311A  B27C 0064                189      cmp     #100,D1 is( x == 100)?
+0000311E  6600 0010                190      bne     collision_miss if x is equal to 100, then hit
+00003122                           191  collision_hit:
+00003122                           192      *hit
+00003122  43F9 00003350            193      lea     hit_msg,A1
+00003128  303C 000E                194      move    #14,D0
+0000312C  4E4F                     195      trap    #15
+0000312E  4E75                     196      rts
+00003130                           197      
+00003130                           198  collision_miss:
+00003130                           199      *miss
+00003130  43F9 00003358            200      lea     miss_msg,A1
+00003136  303C 000E                201      move    #14,D0
+0000313A  4E4F                     202      trap    #15
+0000313C  4E75                     203      rts
+0000313E                           204  
+0000313E                           205  *-------------------------------------------------------
+0000313E                           206  *--------------------------Loop-------------------------
+0000313E                           207  *-------------------------------------------------------
+0000313E                           208  loop:
+0000313E  163C 0005                209      move.b  #5, D3 loop counter D3=5
+00003142                           210  next:
+00003142  43F9 0000335E            211      lea     loop_msg,A1
+00003148  103C 000E                212      move.b  #14,D0
+0000314C  4E4F                     213      trap    #15
+0000314E  5343                     214      sub     #1,D3   decrement loop counter
+00003150  66F0                     215      bne     next    repeat until D0=0
+00003152                           216  
+00003152                           217  *-------------------------------------------------------
+00003152                           218  *------------------Screen Decoration--------------------
+00003152                           219  *-------------------------------------------------------
+00003152                           220  decorate:
+00003152  163C 003C                221      move.b  #60, D3
+00003156  6100 0046                222      bsr     endl
+0000315A                           223  out:
+0000315A  43F9 0000335E            224      lea     loop_msg,A1
+00003160  103C 000E                225      move.b  #14,D0
+00003164  4E4F                     226      trap    #15
+00003166  5343                     227      sub     #1,D3   decrement loop counter
+00003168  66F0                     228      bne     out     repeat until D0=0
+0000316A  6100 0032                229      bsr     endl
+0000316E  4E75                     230      rts
+00003170                           231      
+00003170                           232  clear_screen: 
+00003170  103C 000B                233      move.b  #11,D0      clear screen
+00003174  323C FF00                234      move.w  #$ff00,D1
+00003178  4E4F                     235      trap    #15
+0000317A  4E75                     236      rts
+0000317C                           237  *-------------------------------------------------------
+0000317C                           238  *------------------------Replay-------------------------
+0000317C                           239  *-------------------------------------------------------
+0000317C                           240  replay:
+0000317C  6100 0020                241      bsr     endl
+00003180  43F9 00003360            242      lea     replay_msg,A1
+00003186  103C 000E                243      move.b  #14,D0
+0000318A  4E4F                     244      trap    #15
+0000318C                           245      
+0000318C  103C 0004                246      move.b  #4,D0
+00003190  4E4F                     247      trap    #15
+00003192                           248  
+00003192  B27C 0000                249      cmp     #exit,D1
+00003196  6700 FE6E                250      beq     end         if SR Z register contains 1 beq => Branch Equals
+0000319A  6100 FE8E                251      bsr     gameloop
+0000319E                           252  
+0000319E                           253  endl:
+0000319E  48E7 8040                254      movem.l D0/A1,-(A7)
+000031A2  303C 000E                255      move    #14,D0
+000031A6  43F9 000031B4            256      lea     crlf,A1
+000031AC  4E4F                     257      trap    #15
+000031AE  4CDF 0201                258      movem.l (A7)+,D0/A1
+000031B2  4E75                     259      rts
+000031B4                           260      
+000031B4                           261  *-------------------------------------------------------
+000031B4                           262  *-------------------Data Delarations--------------------
+000031B4                           263  *-------------------------------------------------------
+000031B4                           264  
+000031B4= 0D 0A 00                 265  crlf:           dc.b    $0D,$0A,0
+000031B7= 2A 2A 2A 2A 2A 2A ...    266  welcome_msg:    dc.b    '************************************************************'
+000031F3= 0D 0A                    267                  dc.b    $0D,$0A
+000031F5= 41 76 61 6C 6F 6E ...    268                  dc.b    'Avalon: The Legend Lives'
+0000320D= 0D 0A                    269                  dc.b    $0D,$0A
+0000320F= 2A 2A 2A 2A 2A 2A ...    270                  dc.b    '************************************************************'
+0000324B= 0D 0A 00                 271                  dc.b    $0D,$0A,0
+0000324E= 46 65 65 64 20 6C ...    272  potion_msg:     dc.b    'Feed load (each horse needs at least 100 units of feed)'
+00003285= 0D 0A                    273                  dc.b    $0D,$0A
+00003287= 45 6E 74 65 72 20 ...    274                  dc.b    'Enter feed load : ',0
+0000329A= 4E 75 6D 62 65 72 ...    275  potions_msg:    dc.b    'Number of potions : ',0
+000032AF= 45 61 63 68 20 71 ...    276  weapons_msg:    dc.b    'Each quest need at least 2 Weapons'
+000032D1= 0D 0A                    277                  dc.b    $0D,$0A
+000032D3= 6D 69 6E 69 6D 75 ...    278                  dc.b    'minimum requirement is 2 i.e. Sword x 1 and Speer x 1.'
+00003309= 0D 0A                    279                  dc.b    $0D,$0A
+0000330B= 45 6E 74 65 72 20 ...    280                  dc.b    'Enter # of weapons : ',0
+00003321= 41 64 64 20 47 61 ...    281  gameplay_msg:   dc.b    'Add Gameplay !',0
+00003330= 55 70 64 61 74 65 ...    282  update_msg:     dc.b    'Update Gameplay !',0
+00003342= 44 72 61 77 20 53 ...    283  draw_msg:       dc.b    'Draw Screen !',0
+00003350= 53 74 72 69 6B 65 ...    284  hit_msg:        dc.b    'Strike!',0
+00003358= 4D 69 73 73 21 00        285  miss_msg:       dc.b    'Miss!',0
+0000335E= 2E 00                    286  loop_msg:       dc.b    '.',0
+00003360= 45 6E 74 65 72 20 ...    287  replay_msg:     dc.b    'Enter 0 to Quit any other number to replay : ',0
+0000338E= 53 63 6F 72 65 20 ...    288  hud_msg:        dc.b    'Score : ',0
+00003397                           289  
+00003398                           290  health:     ds.w    1
+0000339A                           291  score:      ds.w    1 reserve space for score
+0000339C                           292  
+0000339C                           293      end start
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+CLEAR_SCREEN        3170
+COLLISION           3116
+COLLISION_HIT       3122
+COLLISION_MISS      3130
+CRLF                31B4
+DECORATE            3152
+DRAW                306E
+DRAW_MSG            3342
+END                 3006
+ENDL                319E
+EXIT                0
+FEED                3088
+GAME                3000
+GAMELOOP            302A
+GAMEPLAY            30D6
+GAMEPLAY_MSG        3321
+HEALTH              3398
+HIT_MSG             3350
+HUD                 30F4
+HUD_MSG             338E
+INPUT               3020
+LOOP                313E
+LOOP_MSG            335E
+LOSE_POINT          8
+MAX_POTIONS         9
+MINE_LOC            64
+MIN_FEED            64
+MIN_POTIONS         1
+MIN_WEAPONS         6
+MISS_MSG            3358
+NEXT                3142
+OUT                 315A
+POTIONS             30A2
+POTIONS_MSG         329A
+POTION_MSG          324E
+REPLAY              317C
+REPLAY_MSG          3360
+SCORE               339A
+START               1000
+UPDATE              3054
+UPDATE_MSG          3330
+WEAPONS             30BC
+WEAPONS_MSG         32AF
+WELCOME             300A
+WELCOME_MSG         31B7
+WIN_POINT           5
