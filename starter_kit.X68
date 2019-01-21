@@ -4,9 +4,8 @@
 * Date Created   : 21/01/2019
 * Description    : A simplified, offline clone of the
 *                : online game "Avalon".
+* Issues/Bugs    : None currenty.
 *-------------------------------------------------------
-
-
 
     org $1000
 
@@ -271,6 +270,12 @@ welcome_msg:    dc.b    '*******************************************************
                 dc.b    'Avalon: The Legend Lives'
                 dc.b    $0D,$0A
                 dc.b    '************************************************************'
+                dc.b    $0D,$0A
+                dc.b    '"Welcome to Avalon! I hope you enjoy your stay!" The old man'
+                dc.b    $0D,$0A
+                dc.b    'said, as you jumped from the horse cart, hitting the ground'
+                dc.b    $0D,$0A
+                dc.b    'of you new home, and start point of your adventure.'
                 dc.b    $0D,$0A,0
 potion_msg:     dc.b    'Feed load (each horse needs at least 100 units of feed)'
                 dc.b    $0D,$0A
