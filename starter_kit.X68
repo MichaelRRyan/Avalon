@@ -33,10 +33,12 @@ mine_loc    EQU 100    example for a hit
 start:
     move.b  #100,$4000 put score/health in memory location $4000
     lea     $4000,A3   assign address A3 to that memory location
+    
+    move.b  #0,$4010   put stage number in memory location $4010
+    lea     $4010,A4   assign address A4 to that memory location
 
 
     bsr     welcome    branch to the welcome subroutine
-    bsr     input      branch to the input subroutine
     bsr     game       branch to the game subroutine
 *Game loop
     org     $3000      the rest of the program is to be located from 3000 onwards
@@ -63,11 +65,86 @@ welcome:
     rts                     return from welcome: subroutine
 
 *-------------------------------------------------------
+*-------------------Welcome Subroutine------------------
+*-------------------------------------------------------
+pick_role:
+
+    lea     wake_up_msg,A1  assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             trap and interpret value in D0
+    bsr     endl            branch to endl subroutine
+    
+    lea     pick_role_msg,A1 assign message to address register A1
+    move.b  #14,D0           move literal 14 to DO
+    trap    #15              trap and interpret value in D0
+    
+    move.b  #3,D5           Move the number 3 to D5 to tell the program how many options there are
+    
+    bsr     input           branch to the input subroutine
+    
+    rts                     return from pick_role: subroutine
+    
+*-------------------------------------------------------
 *---------Gameplay Input Values Subroutine--------------
 *-------------------------------------------------------    
 input:
-    bsr     potions         branch to potion input subroutine
-    bsr     weapons        branch to weaponss input subroutine
+    *bsr     potions         branch to potion input subroutine
+    *bsr     weapons        branch to weaponss input subroutine
+    bsr     endl            Branch to end line subroutine
+    
+    lea     input_nums_msg,A1 assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the "enter number" message
+    
+    move    D5,D1           Move the number of options to D1 to display it
+    move.b  #3,D0           move literal 3 to DO
+    trap    #15             Display the number in D1 to show the input range
+    
+    lea     colon_msg,A1    assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display a colon after the number range
+    
+    move.b  #4,D0           Move the number 4 to D0
+    trap    #15             Take input
+    
+manage_input:
+    CMP     #1,D1           Check input against minimum value
+    BLT     invalid_input   Error if less than 1
+    
+    CMP     D5,D1           Compare input against max value
+    BGT     invalid_input   Error if less than max value
+    
+    CMP     #0,(A4)          Check which state the game is in
+    BEQ     role_input      Branch to the manage input for the role picking
+    BNE     fake_gamestate  branch to display a message if the gamestate is undifined
+    
+    rts                     Return out of subroutine
+
+invalid_input:
+    lea     input_error_msg,A1 assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the error message
+    
+    bra     input           Go back to taking input
+    
+role_input:
+    lea     congrats,A1     assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the error message
+    
+    move.b  #4,D0           Move the number 4 to D0
+    trap    #15             Take input
+    
+    rts
+    
+fake_gamestate:
+    lea     fake_gamestate_msg,A1     assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the error message
+    
+    move.b  #4,D0           Move the number 4 to D0
+    trap    #15             Take input
+    
     rts
 
 *-------------------------------------------------------
@@ -157,11 +234,8 @@ weapons:
 *------------------------------------------------------- 
 gameplay:
     bsr     endl
-    bsr     decorate
-    lea     gameplay_msg,A1
-    move.b  #14,D0
-    trap    #15
-    bsr     decorate
+    CMP.B   #0,(A4)     Check which stage the game is in
+    BEQ     pick_role  branch to the pick role subroutine
     bsr     collision
     rts
 
@@ -270,12 +344,6 @@ welcome_msg:    dc.b    '*******************************************************
                 dc.b    'Avalon: The Legend Lives'
                 dc.b    $0D,$0A
                 dc.b    '************************************************************'
-                dc.b    $0D,$0A
-                dc.b    '"Welcome to Avalon! I hope you enjoy your stay!" The old man'
-                dc.b    $0D,$0A
-                dc.b    'said, as you jumped from the horse cart, hitting the ground'
-                dc.b    $0D,$0A
-                dc.b    'of you new home, and start point of your adventure.'
                 dc.b    $0D,$0A,0
 potion_msg:     dc.b    'Feed load (each horse needs at least 100 units of feed)'
                 dc.b    $0D,$0A
@@ -298,7 +366,22 @@ hud_msg:        dc.b    'Score : ',0
 health:     ds.w    1
 score:      ds.w    1 reserve space for score
 
+wake_up_msg:    dc.b    'You awake in a room, on a bed of red velvet, with no memory',$0D,$0A
+                dc.b    'of how you got here. You climb from the frame and look in a nearby mirror',$0D,$0A,0
+pick_role_msg:  dc.b    '1> You wear armour of polished iron, a sword laying close by. (Knight class)',$0D,$0A,$0D,$0A
+                dc.b    '2> You wear a cloak with mystic symbols sewn into the fabrics, an ancient',$0D,$0A
+                dc.b    'looking staff lays near. (Mage class)',$0D,$0A,$0D,$0A
+                dc.b    '3> You wear tight, well-fitting leather armour with reminents of black dye',$0D,$0A
+                dc.b    'stained to the material. Two knives are fastened to your belt. (Rogue class)',$0D,$0A,0
+input_nums_msg  dc.b    'Enter num between 1 and ',0
+colon_msg       dc.b    ': ',0
+
+input_error_msg dc.b    'Inputted number is outside of range.',$0D,$0A,0
+congrats        dc.b    'You picked a role!',$0D,$0A,0
+fake_gamestate_msg dc.b    'Gamestate doesnt exist',$0D,$0A,0
+
     end start
+
 
 *~Font name~Courier New~
 *~Font size~10~
