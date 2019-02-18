@@ -1,6 +1,6 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 18/02/2019 15:57:45
+Created On: 18/02/2019 20:38:55
 
 00000000                             1  *-------------------------------------------------------
 00000000                             2  * Author         : Michael Rainsford Ryan
@@ -100,7 +100,7 @@ Created On: 18/02/2019 15:57:45
 00003050  103C 000E                 96      move.b  #14,D0          move literal 14 to DO
 00003054  4E4F                      97      trap    #15             Display the "enter number" message
 00003056                            98      
-00003056  3205                      99      move    D5,D1           Move the number of options to D1 to display it
+00003056  2205                      99      move.L    D5,D1           Move the number of options to D1 to display it
 00003058  103C 0003                100      move.b  #3,D0           move literal 3 to DO
 0000305C  4E4F                     101      trap    #15             Display the number in D1 to show the input range
 0000305E                           102      
@@ -118,7 +118,7 @@ Created On: 18/02/2019 15:57:45
 00003078  B245                     114      CMP     D5,D1           Compare input against max value
 0000307A  6E00 0010                115      BGT     invalid_input   Error if less than max value
 0000307E                           116      
-0000307E  0C54 0000                117      CMP     #0,(A4)          Check which state the game is in
+0000307E  0C14 0000                117      CMP.B     #0,(A4)          Check which state the game is in
 00003082  6700 0016                118      BEQ     role_input      Branch to the manage input for the role picking
 00003086  6600 0026                119      BNE     fake_gamestate  branch to display a message if the gamestate is undifined
 0000308A                           120      

@@ -96,7 +96,7 @@ input:
     move.b  #14,D0          move literal 14 to DO
     trap    #15             Display the "enter number" message
     
-    move    D5,D1           Move the number of options to D1 to display it
+    move.l    D5,D1           Move the number of options to D1 to display it
     move.b  #3,D0           move literal 3 to DO
     trap    #15             Display the number in D1 to show the input range
     
@@ -114,7 +114,7 @@ manage_input:
     CMP     D5,D1           Compare input against max value
     BGT     invalid_input   Error if less than max value
     
-    CMP     #0,(A4)          Check which state the game is in
+    CMP.B     #0,(A4)          Check which state the game is in
     BEQ     role_input      Branch to the manage input for the role picking
     BNE     fake_gamestate  branch to display a message if the gamestate is undifined
     
@@ -322,6 +322,8 @@ replay:
     move.b  #4,D0
     trap    #15
 
+    move.b  #0,(A5)     Reset the game state for restart
+    
     cmp     #exit,D1
     beq     end         if SR Z register contains 1 beq => Branch Equals
     bsr     gameloop
@@ -381,6 +383,7 @@ congrats        dc.b    'You picked a role!',$0D,$0A,0
 fake_gamestate_msg dc.b    'Gamestate doesnt exist',$0D,$0A,0
 
     end start
+
 
 
 *~Font name~Courier New~
