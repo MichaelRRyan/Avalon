@@ -34,15 +34,15 @@ start:
     move.b  #100,$4000 put score/health in memory location $4000
     lea     $4000,A3   assign address A3 to that memory location
     
-    move.b  #0,$4010   put stage number in memory location $4010
+    move.b  #0,$4010   put game state number in memory location $4010
     lea     $4010,A4   assign address A4 to that memory location
+    *1 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 20 = End game
 
-    move.b  #0,$4020   put class number in memory location $4010
-    lea     $4020,A5   assign address A4 to that memory location
+    move.b  #0,$4020   put class number in memory location $4020
+    lea     $4020,A5   assign address A5 to that memory location
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
-    move.b  #0,$4030   put torches number in memory location $4010
-    lea     $4030,A6   assign address A4 to that memory location
+    *A6 is used for player coordinates
 
     bsr     welcome    branch to the welcome subroutine
     bsr     game       branch to the game subroutine
@@ -121,8 +121,10 @@ manage_input:
     CMP     D5,D1           Compare input against max value
     BGT     invalid_input   Error if less than max value
     
-    CMP.B   #0,(A4)          Check which state the game is in
+    CMP.B   #0,(A4)         Check which state the game is in
     BEQ     role_input      Branch to the manage input for the role picking
+    CMP.B   #5,(A4)         Check which state the game is in
+    BEQ     movement_input  Branch to the manage input for the movement
     BNE     fake_gamestate  branch to display a message if the gamestate is undifined
     
     rts                     Return out of subroutine
@@ -135,13 +137,9 @@ invalid_input:
     bra     input           Go back to taking input
     
 role_input:
-    lea     congrats,A1     assign message to address register A1
-    move.b  #14,D0          move literal 14 to DO
-    trap    #15             Display the congrats message
-    
     move.b  D1,(A5)         Move the role number to A5 to hold the class number
     
-*Give the player a message depending on the role chosen
+    *Give the player a message depending on the role chosen
     CMP.B   #1,D1
     BEQ     knight_select   Branch to knight message if role selected
     
@@ -151,7 +149,8 @@ role_input:
     CMP.B   #3,D1
     BEQ     rogue_select    Branch to rogue message if role selected
     
-    move.b  #1,(A4)         Change the game state
+    move.b  #5,(A4)         Change the game state to the movement state
+    lea     $514A,A6         Set the player coordinate to the first corridor
     
     rts
     
@@ -172,6 +171,33 @@ rogue_select:
     move.b  #14,D0          move literal 14 to DO
     trap    #15             Display the rogue message
     rts                     Return from the sub routine
+    
+movement_input:
+    CMP     #1,D1
+    BEQ     move_north
+    
+    CMP     #1,D1
+    BEQ     move_east
+    
+    CMP     #1,D1
+    BEQ     move_south
+    
+    CMP     #1,D1
+    BEQ     move_west
+    
+    rts
+
+move_north:
+    rts
+    
+move_east:
+    rts
+    
+move_south:
+    rts
+    
+move_west:
+    rts
 
 fake_gamestate:
     lea     fake_gamestate_msg,A1     assign message to address register A1
@@ -191,6 +217,7 @@ gameloop:
     bsr     clear_screen    clears the screen
     bsr     hud             branch to display HUD subroutine
     bsr     clear_screen    clears the screen
+    bra     gameloop
     bsr     replay          branch to replay game subroutine
     bsr     clear_screen    clears the screen
     rts                     return from gameloop: subroutine
@@ -266,8 +293,10 @@ weapons:
 *------------------------------------------------------- 
 gameplay:
     bsr     endl
-    CMP.B   #0,(A4)     Check which stage the game is in
+    CMP.B   #0,(A4)    Check which stage the game is in
     BEQ     pick_role  branch to the pick role subroutine
+    CMP.B   #5,(A4)    Check which stage the game is in
+    BEQ     movement  branch to the movement subroutine
     bsr     collision
     rts
 
@@ -369,6 +398,43 @@ endl:
     rts
     
 *-------------------------------------------------------
+*-------------------Setup the world---------------------
+*-------------------------------------------------------
+setup_world:
+    move.b  #1,$514A    Setup the starting corridor
+    move.b  #6,$513A    Continue upwards from starting corridor
+    move.b  #4,$5139
+    move.b  #1,$5129
+    move.b  #1,$5119    First shop
+    
+*-------------------------------------------------------
+*-------------------Check Wall Collisions---------------
+*-------------------------------------------------------
+movement:
+    lea     movement_msg,A1
+    move.b  #14,D0
+    trap    #15
+
+    move.b  #4,D5           Move the number 3 to D5 to tell the program how many options there are
+    
+    bsr     input           branch to the input subroutine
+    
+    bsr     wall_collisions Check wall collisions
+    rts
+
+*-------------------------------------------------------
+*-------------------Check Wall Collisions---------------
+*-------------------------------------------------------
+wall_collisions:
+    CMP.B   #1,(A6)     Check the corridor type of the current position
+    BEQ     cor_type_one Branch to Display the corridor type
+    
+    rts
+    
+cor_type_one:
+    
+    
+*-------------------------------------------------------
 *-------------------Data Delarations--------------------
 *-------------------------------------------------------
 
@@ -411,7 +477,6 @@ input_nums_msg  dc.b    'Enter num between 1 and ',0
 colon_msg       dc.b    ': ',0
 
 input_error_msg dc.b    'Inputted number is outside of range.',$0D,$0A,0
-congrats        dc.b    'You picked a role!',$0D,$0A,0
 fake_gamestate_msg dc.b    'Gamestate doesnt exist',$0D,$0A,0
 knight_role_msg dc.b    'You pick up your sword, grab a torch from the wall, and leave the room.',$0D,$0A
                 dc.b    '- You have chosen the KNIGHT class. You specialise in slow, strong attacks.',$0D,$0A,0
@@ -419,8 +484,13 @@ mage_role_msg   dc.b    'You pick up your staff, grab a torch from the wall, and
                 dc.b    '- You have chosen the MAGE class. You specialise in ranged magic attacks.',$0D,$0A,0
 rogue_role_msg  dc.b    'You fasten your belt, grab a torch from the wall, and leave the room.',$0D,$0A
                 dc.b    '- You have chosen the ROGUE class. You specialise in fast, weak attacks.',$0D,$0A,0
+movement_msg    dc.b    '1> Move north.',$0D,$0A
+                dc.b    '2> Move east.',$0D,$0A
+                dc.b    '3> Move south.',$0D,$0A
+                dc.b    '4> Move west.',$0D,$0A,0
 
     end start
+
 
 
 
