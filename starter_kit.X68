@@ -37,6 +37,12 @@ start:
     move.b  #0,$4010   put stage number in memory location $4010
     lea     $4010,A4   assign address A4 to that memory location
 
+    move.b  #0,$4020   put class number in memory location $4010
+    lea     $4020,A5   assign address A4 to that memory location
+    * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
+    
+    move.b  #0,$4030   put torches number in memory location $4010
+    lea     $4030,A6   assign address A4 to that memory location
 
     bsr     welcome    branch to the welcome subroutine
     bsr     game       branch to the game subroutine
@@ -65,7 +71,7 @@ welcome:
     rts                     return from welcome: subroutine
 
 *-------------------------------------------------------
-*-------------------Welcome Subroutine------------------
+*-------------------Role Picking Subroutine------------------
 *-------------------------------------------------------
 pick_role:
 
@@ -82,21 +88,22 @@ pick_role:
     
     bsr     input           branch to the input subroutine
     
+    move.b  #4,D0           Move the number 4 to D0
+    trap    #15             Take input
+    
     rts                     return from pick_role: subroutine
     
 *-------------------------------------------------------
 *---------Gameplay Input Values Subroutine--------------
 *-------------------------------------------------------    
 input:
-    *bsr     potions         branch to potion input subroutine
-    *bsr     weapons        branch to weaponss input subroutine
     bsr     endl            Branch to end line subroutine
     
     lea     input_nums_msg,A1 assign message to address register A1
     move.b  #14,D0          move literal 14 to DO
     trap    #15             Display the "enter number" message
     
-    move.l    D5,D1           Move the number of options to D1 to display it
+    move.l  D5,D1           Move the number of options to D1 to display it
     move.b  #3,D0           move literal 3 to DO
     trap    #15             Display the number in D1 to show the input range
     
@@ -114,7 +121,7 @@ manage_input:
     CMP     D5,D1           Compare input against max value
     BGT     invalid_input   Error if less than max value
     
-    CMP.B     #0,(A4)          Check which state the game is in
+    CMP.B   #0,(A4)          Check which state the game is in
     BEQ     role_input      Branch to the manage input for the role picking
     BNE     fake_gamestate  branch to display a message if the gamestate is undifined
     
@@ -130,21 +137,46 @@ invalid_input:
 role_input:
     lea     congrats,A1     assign message to address register A1
     move.b  #14,D0          move literal 14 to DO
-    trap    #15             Display the error message
+    trap    #15             Display the congrats message
     
-    move.b  #4,D0           Move the number 4 to D0
-    trap    #15             Take input
+    move.b  D1,(A5)         Move the role number to A5 to hold the class number
+    
+*Give the player a message depending on the role chosen
+    CMP.B   #1,D1
+    BEQ     knight_select   Branch to knight message if role selected
+    
+    CMP.B   #2,D1
+    BEQ     mage_select     Branch to mage message if role selected
+    
+    CMP.B   #3,D1
+    BEQ     rogue_select    Branch to rogue message if role selected
+    
+    move.b  #1,(A4)         Change the game state
     
     rts
     
+knight_select:
+    lea     knight_role_msg,A1 assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the knight message
+    rts                     Return from the sub routine
+
+mage_select:
+    lea     mage_role_msg,A1 assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the mage message
+    rts                     Return from the sub routine
+
+rogue_select:
+    lea     rogue_role_msg,A1 assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the rogue message
+    rts                     Return from the sub routine
+
 fake_gamestate:
     lea     fake_gamestate_msg,A1     assign message to address register A1
     move.b  #14,D0          move literal 14 to DO
     trap    #15             Display the error message
-    
-    move.b  #4,D0           Move the number 4 to D0
-    trap    #15             Take input
-    
     rts
 
 *-------------------------------------------------------
@@ -381,8 +413,15 @@ colon_msg       dc.b    ': ',0
 input_error_msg dc.b    'Inputted number is outside of range.',$0D,$0A,0
 congrats        dc.b    'You picked a role!',$0D,$0A,0
 fake_gamestate_msg dc.b    'Gamestate doesnt exist',$0D,$0A,0
+knight_role_msg dc.b    'You pick up your sword, grab a torch from the wall, and leave the room.',$0D,$0A
+                dc.b    '- You have chosen the KNIGHT class. You specialise in slow, strong attacks.',$0D,$0A,0
+mage_role_msg   dc.b    'You pick up your staff, grab a torch from the wall, and leave the room.',$0D,$0A
+                dc.b    '- You have chosen the MAGE class. You specialise in ranged magic attacks.',$0D,$0A,0
+rogue_role_msg  dc.b    'You fasten your belt, grab a torch from the wall, and leave the room.',$0D,$0A
+                dc.b    '- You have chosen the ROGUE class. You specialise in fast, weak attacks.',$0D,$0A,0
 
     end start
+
 
 
 
