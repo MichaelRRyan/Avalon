@@ -36,13 +36,14 @@ start:
     
     move.b  #0,$4010   put game state number in memory location $4010
     lea     $4010,A4   assign address A4 to that memory location
-    *1 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 20 = End game
+    *0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
 
     move.b  #0,$4020   put class number in memory location $4020
     lea     $4020,A5   assign address A5 to that memory location
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
     *A6 is used for player coordinates
+    *D5 is used occasionally for input range
     
     bsr     setup_world
 
@@ -195,9 +196,11 @@ gameloop:
     bsr     update          branch to update game subroutine 
     bsr     clear_screen    clears the screen         
     bsr     draw            branch to draw screen subroutine
-    bsr     clear_screen    clears the screen
+    
     bsr     gameplay        branch to gameplay subroutine
-    bra     gameloop
+   
+    bra     gameloop        Continue looping the game loop     
+    
     bsr     clear_screen    clears the screen
     bsr     hud             branch to display HUD subroutine
     bsr     clear_screen    clears the screen
@@ -210,12 +213,7 @@ gameloop:
 *  Complete Quest
 *------------------------------------------------------- 
 update:
-    bsr     endl            print a CR and LF
-    bsr     decorate        decorate with dots using a loop
-    lea     update_msg,A1   
-    move.b  #14,D0
-    trap    #15
-    bsr     decorate
+    *Add update code here
     rts
 *-------------------------------------------------------
 *-----------------Draw Quest Updates--------------------
@@ -223,12 +221,8 @@ update:
 * quest
 *------------------------------------------------------- 
 draw:
-    bsr     endl
-    bsr     decorate
-    lea     draw_msg,A1
-    move.b  #14,D0
-    trap    #15
-    bsr     decorate
+    CMP.B   #5,(A4)     Check which state the game is in
+    BEQ     draw_loop   If in the movement state, draw the map
     rts
 *-------------------------------------------------------
 *------------------------Potions------------------------
@@ -384,12 +378,122 @@ endl:
 *-------------------Setup the world---------------------
 *-------------------------------------------------------
 setup_world:
-    move.b  #1,$514A    Setup the starting corridor
-    move.b  #6,$513A    Continue upwards from starting corridor
-    move.b  #4,$5139
+    move.b  #14,$514A   Setup the starting corridor
+    move.b  #7,$513A    T junction upwards from starting corridor
+    move.b  #4,$5139    Left corridor
     move.b  #1,$5129
-    move.b  #1,$5119    First shop
+    move.b  #1,$5119
     
+    move.b  #4,$5108    First shop
+    move.b  #0,$5109    Entrance
+    move.b  #5,$510A
+    move.b  #8,$50F8
+    move.b  #0,$50F9
+    move.b  #10,$50FA
+    move.b  #3,$50E8
+    move.b  #7,$50E9
+    move.b  #6,$50EA
+    
+    move.b  #5,$513B    Right corridor
+    move.b  #1,$512B
+    move.b  #1,$511B
+    move.b  #8,$510B    Path continues up with a turn off to the right
+    
+    move.b  #2,$510C    Right path
+    move.b  #2,$510D    Continue right
+    move.b  #5,$510E    Path upwards and to the left
+    move.b  #1,$50FE    Leads upwards into a room
+    
+    move.b  #4,$50ED    First monster room
+    move.b  #0,$50EE    Entrance
+    move.b  #5,$50EF
+    move.b  #8,$50DD
+    move.b  #0,$50DE
+    move.b  #10,$50DF
+    move.b  #3,$50CD
+    move.b  #7,$50CE
+    move.b  #6,$50CF
+    
+    move.b  #1,$50FB    Path that continues up
+    move.b  #1,$50EB    Path continues upwards
+    move.b  #1,$50DB
+    
+    *Bottom row of room
+    move.b  #4,$50C8    Large monster room with locked door
+    move.b  #9,$50C9
+    move.b  #9,$50CA
+    move.b  #0,$50CB    Entrance
+    move.b  #5,$50CC
+    *Middle row of room
+    move.b  #0,$50B8    Exit to the left
+    move.b  #0,$50B9
+    move.b  #0,$50BA
+    move.b  #0,$50BB
+    move.b  #10,$50BC
+    *Top row of room
+    move.b  #3,$50A8
+    move.b  #7,$50A9
+    move.b  #7,$50AA
+    move.b  #7,$50AB    Locked door
+    move.b  #6,$50AC
+    
+    move.b  #2,$50B7    Exit large room leftwards
+    move.b  #2,$50B6    Continue to the left
+    move.b  #7,$50B5    Continue to the left and a path downwards
+    move.b  #2,$50B4    Continue to the left
+    
+    move.b  #3,$50A1    Room to the left
+    move.b  #7,$50A2
+    move.b  #6,$50A3
+    move.b  #8,$50B1
+    move.b  #0,$50B2
+    move.b  #0,$50B3    Entrance to the right
+    move.b  #4,$50C1
+    move.b  #9,$50C2
+    move.b  #5,$50C3
+    
+    move.b  #1,$50C5    Path leading downwards
+    move.b  #1,$50D5
+    move.b  #10,$50E5   Path leading downward and to the left
+    move.b  #2,$50E4    Path on the left
+    move.b  #2,$50E3
+    move.b  #3,$50E2    Path takes a turn downwards
+    move.b  #1,$50F2    Path continues downwards
+    
+    move.b  #3,$5101    Regular enemy room
+    move.b  #0,$5102    Entrance
+    move.b  #6,$5103
+    move.b  #8,$5111
+    move.b  #0,$5112
+    move.b  #10,$5113
+    move.b  #4,$5121
+    move.b  #9,$5122
+    move.b  #10,$5123   Exit at the bottom
+    
+    move.b  #1,$50F5    Path leading downward
+    move.b  #1,$5105
+    move.b  #1,$5115
+    move.b  #1,$5125
+    
+    *Top row of room
+    move.b  #8,$5133    Large enemy room - Exit at top
+    move.b  #7,$5134
+    move.b  #0,$5135    Entrance
+    move.b  #6,$5136
+    
+    *Middle row of room
+    move.b  #8,$5143
+    move.b  #0,$5144
+    move.b  #0,$5145
+    move.b  #10,$5146
+    
+    *Bottom row of room
+    move.b  #4,$5153
+    move.b  #9,$5154
+    move.b  #9,$5155
+    move.b  #5,$5156
+
+
     rts
     
 *-------------------------------------------------------
@@ -551,6 +655,130 @@ press_continue:
     rts
     
 *-------------------------------------------------------
+*----------------------Draw loop------------------------
+*-------------------------------------------------------
+draw_loop:
+    lea     $5000,A2    Load starting memory location into A7
+    move.b  #0,D6       Data register used for rows
+    move.b  #0,D7       Data register used for columns
+    move.l  #0,D1       Clear the D1 data register
+    
+    bsr     loop_rows   Loop for every row
+    rts
+    
+loop_rows:
+    CMP     #22,D6          Check the rows don't go out of bounds
+    BGT     end_loop        If the rows are greater than 22 end the loop
+    
+    move.b  #0,D7           Reset to column 0
+    bsr     loop_columns    Loop for every column
+    
+    add.b   #1,D6           Add to the rows
+    
+    bsr     endl
+    bra     loop_rows
+    
+loop_columns:
+    CMP.B   #15,D7      Check the rows don't go out of bounds
+    BGT     end_loop    If the rows are greater than 22 end the loop
+    
+    bsr     draw_tile
+    bsr     check_for_player
+    
+    add.b   #1,D7
+    add     #1,A2
+    bra     loop_columns
+
+end_loop:
+    rts
+    
+*-------------------------------------------------------
+*----------------------Draw tile------------------------
+*-------------------------------------------------------
+*Draws the tile at the address in the address register A2
+draw_tile:
+    CMP.B   #255,(A2)           Check if the value is undifined
+    BEQ     draw_blocked_tile   Draw the blank tile
+    
+    CMP.B   #1,(A2)
+    BEQ     draw_both_tile
+    CMP.B   #3,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #4,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #5,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #6,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #8,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #10,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #11,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #12,(A2)
+    BEQ     draw_both_tile
+    CMP.B   #13,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #14,(A2)
+    BEQ     draw_both_tile
+    
+    BRA     draw_blank_tile     Draw the blank tile
+    
+draw_blocked_tile:
+    lea     blocked_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_both_tile:
+    lea     both_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_left_tile:
+    lea     left_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_right_tile:
+    lea     right_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_blank_tile:
+    lea     blank_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+check_for_player:
+    CMP.W   A6,A2
+    BEQ     draw_player
+    rts
+    
+draw_player:
+    move.w  #255,D1
+    move.b  #11,D0
+    trap    #15
+    
+    sub.w   #512,D1
+    trap    #15
+    
+    lea     player_mark,A1
+    move.b  #14,D0
+    trap    #15
+    
+    add.w   #512,D1
+    move.b  #11,D0
+    trap    #15
+    
+    rts
+
+*-------------------------------------------------------
 *-------------------Data Delarations--------------------
 *-------------------------------------------------------
 
@@ -611,7 +839,16 @@ move_west_msg:   dc.b    'Moved west.',$0D,$0A,0
 movement_blocked_msg:  dc.b    'A wall blocks your path.',$0D,$0A,0
 continue_msg:    dc.b    'Enter any key to continue... ',0
 
+blank_tile      dc.b    '   ',0
+both_tile       dc.b    '| |',0
+left_tile       dc.b    '|  ',0
+right_tile      dc.b    '  |',0
+blocked_tile    dc.b    '\/\',0
+player_mark     dc.b    '*',0
+
     end start
+
+
 
 
 
