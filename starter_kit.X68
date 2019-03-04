@@ -48,6 +48,7 @@ start:
     bsr     setup_world
 
     bsr     welcome    branch to the welcome subroutine
+    bsr     press_continue
     bsr     game       branch to the game subroutine
 *Game loop
     org     $3000      the rest of the program is to be located from 3000 onwards
@@ -95,49 +96,6 @@ pick_role:
     
     rts                     return from pick_role subroutine
     
-*-------------------------------------------------------
-*---------Gameplay Input Values Subroutine--------------
-*-------------------------------------------------------    
-input:
-    bsr     endl            Branch to end line subroutine
-    
-    lea     input_nums_msg,A1 assign message to address register A1
-    move.b  #14,D0          move literal 14 to DO
-    trap    #15             Display the "enter number" message
-    
-    move.l  D5,D1           Move the number of options to D1 to display it
-    move.b  #3,D0           move literal 3 to DO
-    trap    #15             Display the number in D1 to show the input range
-    
-    lea     colon_msg,A1    assign message to address register A1
-    move.b  #14,D0          move literal 14 to DO
-    trap    #15             Display a colon after the number range
-    
-    move.b  #4,D0           Move the number 4 to D0
-    trap    #15             Take input
-    
-manage_input:
-    CMP     #1,D1           Check input against minimum value
-    BLT     invalid_input   Error if less than 1
-    
-    CMP     D5,D1           Compare input against max value
-    BGT     invalid_input   Error if less than max value
-    
-    CMP.B   #0,(A4)         Check which state the game is in
-    BEQ     role_input      Branch to the manage input for the role picking
-    CMP.B   #5,(A4)         Check which state the game is in
-    BEQ     wall_collisions Branch to the manage input for the movement
-    BNE     fake_gamestate  branch to display a message if the gamestate is undifined
-    
-    rts                     Return out of subroutine
-
-invalid_input:
-    lea     input_error_msg,A1 assign message to address register A1
-    move.b  #14,D0          move literal 14 to DO
-    trap    #15             Display the error message
-    
-    bra     input           Go back to taking input
-    
 role_input:
     move.b  D1,(A5)         Move the role number to A5 to hold the class number
     
@@ -181,8 +139,51 @@ rogue_select:
     move.b  #5,(A4)         Change the game state to the movement state
     lea     $514A,A6         Set the player coordinate to the first corridor
     
-    rts                     Return from the sub routine
+    rts                     Return from the sub routin
+    
+*-------------------------------------------------------
+*---------Gameplay Input Values Subroutine--------------
+*-------------------------------------------------------    
+input:
+    bsr     endl            Branch to end line subroutine
+    
+    lea     input_nums_msg,A1 assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the "enter number" message
+    
+    move.l  D5,D1           Move the number of options to D1 to display it
+    move.b  #3,D0           move literal 3 to DO
+    trap    #15             Display the number in D1 to show the input range
+    
+    lea     colon_msg,A1    assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display a colon after the number range
+    
+    move.b  #4,D0           Move the number 4 to D0
+    trap    #15             Take input
+    
+manage_input:
+    CMP     #1,D1           Check input against minimum value
+    BLT     invalid_input   Error if less than 1
+    
+    CMP     D5,D1           Compare input against max value
+    BGT     invalid_input   Error if less than max value
+    
+    CMP.B   #0,(A4)         Check which state the game is in
+    BEQ     role_input      Branch to the manage input for the role picking
+    CMP.B   #5,(A4)         Check which state the game is in
+    BEQ     wall_collisions Branch to the manage input for the movement
+    BNE     fake_gamestate  branch to display a message if the gamestate is undifined
+    
+    rts                     Return out of subroutine
 
+invalid_input:
+    lea     input_error_msg,A1 assign message to address register A1
+    move.b  #14,D0          move literal 14 to DO
+    trap    #15             Display the error message
+    
+    bra     input           Go back to taking input
+    
 fake_gamestate:
     lea     fake_gamestate_msg,A1     assign message to address register A1
     move.b  #14,D0          move literal 14 to DO
@@ -224,58 +225,17 @@ draw:
     CMP.B   #5,(A4)     Check which state the game is in
     BEQ     draw_loop   If in the movement state, draw the map
     rts
-*-------------------------------------------------------
-*------------------------Potions------------------------
-* Input the ingredients for each potion. Ingredients costs 
-* money. For an advanced mark you need to manage this 
-* resource
-*------------------------------------------------------- 
-feed:
-    bsr     endl
-    bsr     decorate
-    lea     potion_msg,A1
-    move.b  #14,D0
-    trap    #15
-    bsr     decorate
-    rts
-
-*-------------------------------------------------------
-*--------------------Potions Inventory---------------------
-* Number of potions to be used in a Quest 
-*------------------------------------------------------- 
-potions:
-    bsr     endl
-    bsr     decorate
-    lea     potions_msg,A1
-    move.b  #14,D0
-    trap    #15
-    bsr     decorate
-    rts
-
-*-------------------------------------------------------
-*-------------------------Weapons-----------------------
-* Number of weapons
-*-------------------------------------------------------   
-weapons:
-    bsr     endl
-    bsr     decorate
-    lea     weapons_msg,A1
-    move.b  #14,D0
-    trap    #15
-    bsr     decorate
-    rts
 
 *-------------------------------------------------------
 *---Game Play (Quest Progress)--------------------------
 *------------------------------------------------------- 
 gameplay:
-    bsr     endl
-    CMP.B   #0,(A4)    Check which stage the game is in
-    BEQ     pick_role  branch to the pick role subroutine
-    CMP.B   #5,(A4)    Check which stage the game is in
-    BEQ     movement  branch to the movement subroutine
-    bsr     collision
-    rts
+    bsr     endl        Break to a new line
+    CMP.B   #0,(A4)     Check which stage the game is in
+    BEQ     pick_role   branch to the pick role subroutine
+    CMP.B   #5,(A4)     Check which stage the game is in
+    BEQ     movement    branch to the movement subroutine
+    rts                 Return from 'gameplay' subroutine
 
 *-------------------------------------------------------
 *-----------------Heads Up Display (Score)--------------
@@ -293,40 +253,6 @@ hud:
     trap    #15         intrepret value in D0, which 3 which displays D1
     bsr     decorate
     rts
-
-*-------------------------------------------------------
-*-----------------------Being Attacked------------------
-* This could be used for collision detection
-*-------------------------------------------------------
-collision:
-    move.b  #mine_loc,D1
-    cmp     #100,D1 is( x == 100)?
-	bne     collision_miss if x is equal to 100, then hit
-collision_hit:
-    *hit
-    lea     hit_msg,A1
-    move    #14,D0
-    trap    #15
-    rts
-    
-collision_miss:
-    *miss
-    lea     miss_msg,A1
-    move    #14,D0
-    trap    #15
-    rts
-
-*-------------------------------------------------------
-*--------------------------Loop-------------------------
-*-------------------------------------------------------
-loop:
-    move.b  #5, D3 loop counter D3=5
-next:
-    lea     loop_msg,A1
-    move.b  #14,D0
-    trap    #15
-	sub     #1,D3   decrement loop counter
-    bne     next    repeat until D0=0
 
 *-------------------------------------------------------
 *------------------Screen Decoration--------------------
@@ -372,6 +298,273 @@ endl:
     lea     crlf,A1
     trap    #15
     movem.l (A7)+,D0/A1
+    rts
+        
+*-------------------------------------------------------
+*----------------------Manage Movement------------------
+*-------------------------------------------------------
+movement:
+    lea     movement_msg,A1 Load the movement message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+
+    move.b  #4,D5           Move the number 3 to D5 to tell the program how many options there are
+    
+    bsr     input           branch to the input subroutine
+    rts
+
+*-------------------------------------------------------
+*-------------------Check Wall Collisions---------------
+*-------------------------------------------------------
+wall_collisions:
+    *Check collisions in the movement direction
+    CMP.B   #1,D1       Check the movement direction
+    BEQ     move_north  Branch to Display the corridor type
+    
+    CMP.B   #2,D1       Check the movement direction
+    BEQ     move_south  Branch to Display the corridor type
+    
+    CMP.B   #3,D1       Check the movement direction
+    BEQ     move_west   Branch to Display the corridor type
+    
+    CMP.B   #4,D1       Check the movement direction
+    BEQ     move_east   Branch to Display the corridor type
+    
+    rts
+    
+move_north:
+    *Check if the tile is any of the corridor types with a wall at the top
+    CMP.B   #2,(A6)
+    BEQ     movement_blocked
+    CMP.B   #3,(A6)
+    BEQ     movement_blocked
+    CMP.B   #6,(A6)
+    BEQ     movement_blocked
+    CMP.B   #7,(A6)
+    BEQ     movement_blocked
+    CMP.B   #11,(A6)
+    BEQ     movement_blocked
+    CMP.B   #12,(A6)
+    BEQ     movement_blocked
+    CMP.B   #13,(A6)
+    BEQ     movement_blocked
+    
+    sub     #16,A6              Move the player north
+    
+    rts
+    
+move_south:
+    *Check if the tile is any of the corridor types with a wall at the bottom
+    CMP.B   #2,(A6)
+    BEQ     movement_blocked
+    CMP.B   #4,(A6)
+    BEQ     movement_blocked
+    CMP.B   #5,(A6)
+    BEQ     movement_blocked
+    CMP.B   #9,(A6)
+    BEQ     movement_blocked
+    CMP.B   #11,(A6)
+    BEQ     movement_blocked
+    CMP.B   #13,(A6)
+    BEQ     movement_blocked
+    CMP.B   #14,(A6)
+    BEQ     movement_blocked
+    
+    add     #16,A6              Move the player south
+    
+    rts
+
+move_west:
+    *Check if the tile is any of the corridor types with a wall to the left
+    CMP.B   #1,(A6)
+    BEQ     movement_blocked
+    CMP.B   #3,(A6)
+    BEQ     movement_blocked
+    CMP.B   #4,(A6)
+    BEQ     movement_blocked
+    CMP.B   #8,(A6)
+    BEQ     movement_blocked
+    CMP.B   #11,(A6)
+    BEQ     movement_blocked
+    CMP.B   #12,(A6)
+    BEQ     movement_blocked
+    CMP.B   #14,(A6)
+    BEQ     movement_blocked
+    
+    sub     #1,A6               Move the player west
+    
+    *lea     move_west_msg,A1    Load the message
+    *move.b  #14,D0              Move the trap command to display a message
+    *trap    #15                 Display the move north message
+    *bsr     press_continue          Pause the game until a key is pressed
+    
+    rts
+    
+move_east:
+    *Check if the tile is any of the corridor types with a wall to the right
+    CMP.B   #1,(A6)
+    BEQ     movement_blocked
+    CMP.B   #5,(A6)
+    BEQ     movement_blocked
+    CMP.B   #6,(A6)
+    BEQ     movement_blocked
+    CMP.B   #10,(A6)
+    BEQ     movement_blocked
+    CMP.B   #12,(A6)
+    BEQ     movement_blocked
+    CMP.B   #13,(A6)
+    BEQ     movement_blocked
+    CMP.B   #14,(A6)
+    BEQ     movement_blocked
+    
+    add     #1,A6                   Move the player east
+    
+    rts
+
+movement_blocked:
+    lea     movement_blocked_msg,A1 Load the message
+    move.b  #14,D0                  Move the trap command to display a message
+    trap    #15                     Display the movement blocked message
+    bsr     press_continue          Pause the game until a key is pressed
+    
+    rts                             Return from the subroutine
+    
+*-------------------------------------------------------
+*-------------------Misc Subroutines--------------------
+*-------------------------------------------------------
+press_continue:
+    bsr     endl
+
+    lea     continue_msg,A1     Load message into A1
+    move.b  #14,D0              Move the trap command to display a message
+    trap    #15                 display the "press any ket to continue" text
+    
+    move.b  #4,D0               Move the trap command to take input
+    trap    #15                 take input to freeze the game
+    rts                         Return from the 'press continue' subroutine
+    
+*-------------------------------------------------------
+*----------------------Draw loop------------------------
+*-------------------------------------------------------
+draw_loop:
+    lea     $5000,A2        Load starting memory location into A7
+    move.b  #0,D6           Data register used for rows
+    move.b  #0,D7           Data register used for columns
+    move.l  #0,D1           Clear the D1 data register
+    
+    bsr     loop_rows       Loop for every row
+    rts
+    
+loop_rows:
+    CMP     #22,D6          Check the rows don't go out of bounds
+    BGT     end_loop        If the rows are greater than 22 end the loop
+    
+    move.b  #0,D7           Reset to column 0
+    bsr     loop_columns    Loop for every column
+    
+    add.b   #1,D6           Add to the rows
+    
+    bsr     endl            Break to the next line
+    bra     loop_rows       Loop through the rows again
+    
+loop_columns:
+    CMP.B   #15,D7              Check the rows don't go out of bounds
+    BGT     end_loop            If the rows are greater than 22 end the loop
+    
+    bsr     draw_tile           Draw the current tile
+    bsr     check_for_player    Draw the player in the current tile if they're there
+    
+    add.b   #1,D7               Add to the column count
+    add     #1,A2               Move to the next memory location
+    bra     loop_columns        Loop the columns again
+
+end_loop:
+    rts                         Return once a loop is finished
+    
+*-------------------------------------------------------
+*----------------------Draw tile------------------------
+*-------------------------------------------------------
+*Draws the tile at the address in the address register A2
+draw_tile:
+    CMP.B   #255,(A2)           Check if the value is undifined
+    BEQ     draw_blocked_tile   Draw the blank tile
+    
+    CMP.B   #1,(A2)
+    BEQ     draw_both_tile
+    CMP.B   #3,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #4,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #5,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #6,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #8,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #10,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #11,(A2)
+    BEQ     draw_left_tile
+    CMP.B   #12,(A2)
+    BEQ     draw_both_tile
+    CMP.B   #13,(A2)
+    BEQ     draw_right_tile
+    CMP.B   #14,(A2)
+    BEQ     draw_both_tile
+    
+    BRA     draw_blank_tile     Draw the blank tile
+    
+draw_blocked_tile:
+    lea     blocked_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_both_tile:
+    lea     both_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_left_tile:
+    lea     left_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_right_tile:
+    lea     right_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+draw_blank_tile:
+    lea     blank_tile,A1
+    move.b  #14,D0
+    trap    #15
+    rts
+    
+check_for_player:
+    CMP.W   A6,A2
+    BEQ     draw_player
+    rts
+    
+draw_player:
+    move.w  #255,D1
+    move.b  #11,D0
+    trap    #15
+    
+    sub.w   #512,D1
+    trap    #15
+    
+    lea     player_mark,A1
+    move.b  #14,D0
+    trap    #15
+    
+    add.w   #512,D1
+    move.b  #11,D0
+    trap    #15
+    
     rts
     
 *-------------------------------------------------------
@@ -492,291 +685,9 @@ setup_world:
     move.b  #9,$5154
     move.b  #9,$5155
     move.b  #5,$5156
-
-
-    rts
-    
-*-------------------------------------------------------
-*----------------------Manage Movement------------------
-*-------------------------------------------------------
-movement:
-    lea     movement_msg,A1
-    move.b  #14,D0
-    trap    #15
-
-    move.b  #4,D5           Move the number 3 to D5 to tell the program how many options there are
-    
-    bsr     input           branch to the input subroutine
-    rts
-
-*-------------------------------------------------------
-*-------------------Check Wall Collisions---------------
-*-------------------------------------------------------
-wall_collisions:
-    *Check collisions in the movement direction
-    CMP.B   #1,D1       Check the movement direction
-    BEQ     move_north  Branch to Display the corridor type
-    
-    CMP.B   #2,D1       Check the movement direction
-    BEQ     move_east   Branch to Display the corridor type
-    
-    CMP.B   #3,D1       Check the movement direction
-    BEQ     move_south  Branch to Display the corridor type
-    
-    CMP.B   #4,D1       Check the movement direction
-    BEQ     move_west   Branch to Display the corridor type
-    
-    rts
-    
-move_north:
-    *Check if the tile is any of the corridor types with a wall at the top
-    CMP.B   #2,(A6)
-    BEQ     movement_blocked
-    CMP.B   #3,(A6)
-    BEQ     movement_blocked
-    CMP.B   #6,(A6)
-    BEQ     movement_blocked
-    CMP.B   #7,(A6)
-    BEQ     movement_blocked
-    CMP.B   #11,(A6)
-    BEQ     movement_blocked
-    CMP.B   #12,(A6)
-    BEQ     movement_blocked
-    CMP.B   #13,(A6)
-    BEQ     movement_blocked
-    
-    sub     #16,A6              Move the player north
-    lea     move_north_msg,A1   Load the message
-    move.b  #14,D0              Move the trap command to display a message
-    trap    #15                 Display the move north message
-    
-    bsr     press_continue          Pause the game until a key is pressed
     
     rts
 
-move_east:
-    *Check if the tile is any of the corridor types with a wall to the right
-    CMP.B   #1,(A6)
-    BEQ     movement_blocked
-    CMP.B   #5,(A6)
-    BEQ     movement_blocked
-    CMP.B   #6,(A6)
-    BEQ     movement_blocked
-    CMP.B   #10,(A6)
-    BEQ     movement_blocked
-    CMP.B   #12,(A6)
-    BEQ     movement_blocked
-    CMP.B   #13,(A6)
-    BEQ     movement_blocked
-    CMP.B   #14,(A6)
-    BEQ     movement_blocked
-    
-    add     #1,A6               Move the player east
-    lea     move_east_msg,A1    Load the message
-    move.b  #14,D0              Move the trap command to display a message
-    trap    #15                 Display the move north message
-    
-    bsr     press_continue          Pause the game until a key is pressed
-    
-    rts
-
-move_south:
-    *Check if the tile is any of the corridor types with a wall at the bottom
-    CMP.B   #2,(A6)
-    BEQ     movement_blocked
-    CMP.B   #4,(A6)
-    BEQ     movement_blocked
-    CMP.B   #5,(A6)
-    BEQ     movement_blocked
-    CMP.B   #9,(A6)
-    BEQ     movement_blocked
-    CMP.B   #11,(A6)
-    BEQ     movement_blocked
-    CMP.B   #13,(A6)
-    BEQ     movement_blocked
-    CMP.B   #14,(A6)
-    BEQ     movement_blocked
-    
-    add     #16,A6              Move the player south
-    lea     move_south_msg,A1   Load the message
-    move.b  #14,D0              Move the trap command to display a message
-    trap    #15                 Display the move north message
-    
-    bsr     press_continue          Pause the game until a key is pressed
-    
-    rts
-
-move_west:
-    *Check if the tile is any of the corridor types with a wall to the left
-    CMP.B   #1,(A6)
-    BEQ     movement_blocked
-    CMP.B   #3,(A6)
-    BEQ     movement_blocked
-    CMP.B   #4,(A6)
-    BEQ     movement_blocked
-    CMP.B   #8,(A6)
-    BEQ     movement_blocked
-    CMP.B   #11,(A6)
-    BEQ     movement_blocked
-    CMP.B   #12,(A6)
-    BEQ     movement_blocked
-    CMP.B   #14,(A6)
-    BEQ     movement_blocked
-    
-    sub     #1,A6               Move the player west
-    lea     move_west_msg,A1    Load the message
-    move.b  #14,D0              Move the trap command to display a message
-    trap    #15                 Display the move north message
-    
-    bsr     press_continue          Pause the game until a key is pressed
-    
-    rts
-
-movement_blocked:
-    lea     movement_blocked_msg,A1 Load the message
-    move.b  #14,D0                  Move the trap command to display a message
-    trap    #15                     Display the movement blocked message
-    bsr     press_continue          Pause the game until a key is pressed
-    
-    rts             Return from the subroutine
-    
-*-------------------------------------------------------
-*-------------------Misc Subroutines--------------------
-*-------------------------------------------------------
-press_continue:
-    bsr     endl
-
-    lea     continue_msg,A1     Load message into A1
-    move.b  #14,D0              Move the trap command to display a message
-    trap    #15                 display the "press any ket to continue" text
-    
-    move.b  #4,D0               Move the trap command to take input
-    trap    #15                 take input to freeze the game
-    rts
-    
-*-------------------------------------------------------
-*----------------------Draw loop------------------------
-*-------------------------------------------------------
-draw_loop:
-    lea     $5000,A2    Load starting memory location into A7
-    move.b  #0,D6       Data register used for rows
-    move.b  #0,D7       Data register used for columns
-    move.l  #0,D1       Clear the D1 data register
-    
-    bsr     loop_rows   Loop for every row
-    rts
-    
-loop_rows:
-    CMP     #22,D6          Check the rows don't go out of bounds
-    BGT     end_loop        If the rows are greater than 22 end the loop
-    
-    move.b  #0,D7           Reset to column 0
-    bsr     loop_columns    Loop for every column
-    
-    add.b   #1,D6           Add to the rows
-    
-    bsr     endl
-    bra     loop_rows
-    
-loop_columns:
-    CMP.B   #15,D7      Check the rows don't go out of bounds
-    BGT     end_loop    If the rows are greater than 22 end the loop
-    
-    bsr     draw_tile
-    bsr     check_for_player
-    
-    add.b   #1,D7
-    add     #1,A2
-    bra     loop_columns
-
-end_loop:
-    rts
-    
-*-------------------------------------------------------
-*----------------------Draw tile------------------------
-*-------------------------------------------------------
-*Draws the tile at the address in the address register A2
-draw_tile:
-    CMP.B   #255,(A2)           Check if the value is undifined
-    BEQ     draw_blocked_tile   Draw the blank tile
-    
-    CMP.B   #1,(A2)
-    BEQ     draw_both_tile
-    CMP.B   #3,(A2)
-    BEQ     draw_left_tile
-    CMP.B   #4,(A2)
-    BEQ     draw_left_tile
-    CMP.B   #5,(A2)
-    BEQ     draw_right_tile
-    CMP.B   #6,(A2)
-    BEQ     draw_right_tile
-    CMP.B   #8,(A2)
-    BEQ     draw_left_tile
-    CMP.B   #10,(A2)
-    BEQ     draw_right_tile
-    CMP.B   #11,(A2)
-    BEQ     draw_left_tile
-    CMP.B   #12,(A2)
-    BEQ     draw_both_tile
-    CMP.B   #13,(A2)
-    BEQ     draw_right_tile
-    CMP.B   #14,(A2)
-    BEQ     draw_both_tile
-    
-    BRA     draw_blank_tile     Draw the blank tile
-    
-draw_blocked_tile:
-    lea     blocked_tile,A1
-    move.b  #14,D0
-    trap    #15
-    rts
-    
-draw_both_tile:
-    lea     both_tile,A1
-    move.b  #14,D0
-    trap    #15
-    rts
-    
-draw_left_tile:
-    lea     left_tile,A1
-    move.b  #14,D0
-    trap    #15
-    rts
-    
-draw_right_tile:
-    lea     right_tile,A1
-    move.b  #14,D0
-    trap    #15
-    rts
-    
-draw_blank_tile:
-    lea     blank_tile,A1
-    move.b  #14,D0
-    trap    #15
-    rts
-    
-check_for_player:
-    CMP.W   A6,A2
-    BEQ     draw_player
-    rts
-    
-draw_player:
-    move.w  #255,D1
-    move.b  #11,D0
-    trap    #15
-    
-    sub.w   #512,D1
-    trap    #15
-    
-    lea     player_mark,A1
-    move.b  #14,D0
-    trap    #15
-    
-    add.w   #512,D1
-    move.b  #11,D0
-    trap    #15
-    
-    rts
 
 *-------------------------------------------------------
 *-------------------Data Delarations--------------------
@@ -829,9 +740,9 @@ mage_role_msg:   dc.b    'You pick up your staff, grab a torch from the wall, an
 rogue_role_msg:  dc.b    'You fasten your belt, grab a torch from the wall, and leave the room.',$0D,$0A
                 dc.b    '- You have chosen the ROGUE class. You specialise in fast, weak attacks.',$0D,$0A,0
 movement_msg:    dc.b    '1> Move north.',$0D,$0A
-                dc.b    '2> Move east.',$0D,$0A
-                dc.b    '3> Move south.',$0D,$0A
-                dc.b    '4> Move west.',$0D,$0A,0
+                dc.b    '2> Move south.',$0D,$0A
+                dc.b    '3> Move west.',$0D,$0A
+                dc.b    '4> Move east.',$0D,$0A,0
 move_north_msg:  dc.b    'Moved north.',$0D,$0A,0
 move_east_msg:   dc.b    'Moved east.',$0D,$0A,0
 move_south_msg:  dc.b    'Moved south.',$0D,$0A,0
@@ -847,6 +758,7 @@ blocked_tile    dc.b    '\/\',0
 player_mark     dc.b    '*',0
 
     end start
+
 
 
 
