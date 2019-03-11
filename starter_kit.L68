@@ -1,6 +1,6 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 11/03/2019 15:55:21
+Created On: 11/03/2019 20:24:09
 
 00000000                             1  *-------------------------------------------------------
 00000000                             2  * Author         : Michael Rainsford Ryan
@@ -68,11 +68,11 @@ Created On: 11/03/2019 15:55:21
 0000101A  4BF8 4020                 64      lea     $4020,A5   assign address A5 to that memory location
 0000101E                            65      * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
 0000101E                            66      
-0000101E  6100 24B8                 67      bsr     setup_world
-00001022  6100 26EA                 68      bsr     setup_enemies
+0000101E  6100 252A                 67      bsr     setup_world
+00001022  6100 275C                 68      bsr     setup_enemies
 00001026                            69  
 00001026  6100 1FE2                 70      bsr     welcome    branch to the welcome subroutine
-0000102A  6100 22F6                 71      bsr     press_continue
+0000102A  6100 2366                 71      bsr     press_continue
 0000102E  6100 1FD0                 72      bsr     game       branch to the game subroutine
 00001032                            73  *Game loop
 00003000                            74      org     $3000      the rest of the program is to be located from 3000 onwards
@@ -91,11 +91,11 @@ Created On: 11/03/2019 15:55:21
 0000300A                            87  *-------------------Welcome Subroutine------------------
 0000300A                            88  *-------------------------------------------------------
 0000300A                            89  welcome:
-0000300A  6100 01C2                 90      bsr     endl            branch to endl subroutine
-0000300E  43F9 0000372B             91      lea     welcome_msg,A1  assign message to address register A1
+0000300A  6100 020C                 90      bsr     endl            branch to endl subroutine
+0000300E  43F9 0000379D             91      lea     welcome_msg,A1  assign message to address register A1
 00003014  103C 000E                 92      move.b  #14,D0          move literal 14 to DO
 00003018  4E4F                      93      trap    #15             trap and interpret value in D0
-0000301A  6100 01B2                 94      bsr     endl            branch to endl subroutine
+0000301A  6100 01FC                 94      bsr     endl            branch to endl subroutine
 0000301E  4E75                      95      rts                     return from welcome: subroutine
 00003020                            96  
 00003020                            97  *-------------------------------------------------------
@@ -103,12 +103,12 @@ Created On: 11/03/2019 15:55:21
 00003020                            99  *-------------------------------------------------------
 00003020                           100  pick_role:
 00003020                           101  
-00003020  43F9 00003910            102      lea     wake_up_msg,A1  assign message to address register A1
+00003020  43F9 00003982            102      lea     wake_up_msg,A1  assign message to address register A1
 00003026  103C 000E                103      move.b  #14,D0          move literal 14 to DO
 0000302A  4E4F                     104      trap    #15             trap and interpret value in D0
-0000302C  6100 01A0                105      bsr     endl            branch to endl subroutine
+0000302C  6100 01EA                105      bsr     endl            branch to endl subroutine
 00003030                           106      
-00003030  43F9 00003999            107      lea     pick_role_msg,A1 assign message to address register A1
+00003030  43F9 00003A0B            107      lea     pick_role_msg,A1 assign message to address register A1
 00003036  103C 000E                108      move.b  #14,D0           move literal 14 to DO
 0000303A  4E4F                     109      trap    #15              trap and interpret value in D0
 0000303C                           110      
@@ -116,7 +116,7 @@ Created On: 11/03/2019 15:55:21
 00003040                           112      
 00003040  6100 0066                113      bsr     input           branch to the input subroutine
 00003044                           114      
-00003044  6100 02DC                115      bsr     press_continue          Pause the game until a key is pressed
+00003044  6100 034C                115      bsr     press_continue          Pause the game until a key is pressed
 00003048                           116      
 00003048  4E75                     117      rts                     return from pick_role subroutine
 0000304A                           118      
@@ -136,7 +136,7 @@ Created On: 11/03/2019 15:55:21
 00003064  4E75                     132      rts
 00003066                           133      
 00003066                           134  knight_select:
-00003066  43F9 00003B6C            135      lea     knight_role_msg,A1 assign message to address register A1
+00003066  43F9 00003BDE            135      lea     knight_role_msg,A1 assign message to address register A1
 0000306C  103C 000E                136      move.b  #14,D0          move literal 14 to DO
 00003070  4E4F                     137      trap    #15             Display the knight message
 00003072                           138      
@@ -146,7 +146,7 @@ Created On: 11/03/2019 15:55:21
 0000307A  4E75                     142      rts                     Return from the sub routine
 0000307C                           143  
 0000307C                           144  mage_select:
-0000307C  43F9 00003C03            145      lea     mage_role_msg,A1 assign message to address register A1
+0000307C  43F9 00003C75            145      lea     mage_role_msg,A1 assign message to address register A1
 00003082  103C 000E                146      move.b  #14,D0          move literal 14 to DO
 00003086  4E4F                     147      trap    #15             Display the mage message
 00003088                           148      
@@ -156,7 +156,7 @@ Created On: 11/03/2019 15:55:21
 00003090  4E75                     152      rts                     Return from the sub routine
 00003092                           153  
 00003092                           154  rogue_select:
-00003092  43F9 00003C98            155      lea     rogue_role_msg,A1 assign message to address register A1
+00003092  43F9 00003D0A            155      lea     rogue_role_msg,A1 assign message to address register A1
 00003098  103C 000E                156      move.b  #14,D0          move literal 14 to DO
 0000309C  4E4F                     157      trap    #15             Display the rogue message
 0000309E                           158      
@@ -169,9 +169,9 @@ Created On: 11/03/2019 15:55:21
 000030A8                           165  *---------Gameplay Input Values Subroutine--------------
 000030A8                           166  *-------------------------------------------------------    
 000030A8                           167  input:
-000030A8  6100 0124                168      bsr     endl            Branch to end line subroutine
+000030A8  6100 016E                168      bsr     endl            Branch to end line subroutine
 000030AC                           169      
-000030AC  43F9 00003B10            170      lea     input_nums_msg,A1 assign message to address register A1
+000030AC  43F9 00003B82            170      lea     input_nums_msg,A1 assign message to address register A1
 000030B2  103C 000E                171      move.b  #14,D0          move literal 14 to DO
 000030B6  4E4F                     172      trap    #15             Display the "enter number" message
 000030B8                           173      
@@ -179,7 +179,7 @@ Created On: 11/03/2019 15:55:21
 000030BA  103C 0003                175      move.b  #3,D0           move literal 3 to DO
 000030BE  4E4F                     176      trap    #15             Display the number in D1 to show the input range
 000030C0                           177      
-000030C0  43F9 00003B29            178      lea     colon_msg,A1    assign message to address register A1
+000030C0  43F9 00003B9B            178      lea     colon_msg,A1    assign message to address register A1
 000030C6  103C 000E                179      move.b  #14,D0          move literal 14 to DO
 000030CA  4E4F                     180      trap    #15             Display a colon after the number range
 000030CC                           181      
@@ -196,20 +196,20 @@ Created On: 11/03/2019 15:55:21
 000030E0  0C14 0000                192      CMP.B   #0,(A4)         Check which state the game is in
 000030E4  6700 FF64                193      BEQ     role_input      Branch to the manage input for the role picking
 000030E8  0C14 0005                194      CMP.B   #5,(A4)         Check which state the game is in
-000030EC  6700 010C                195      BEQ     wall_collisions Branch to the manage input for the movement
+000030EC  6700 0156                195      BEQ     wall_collisions Branch to the manage input for the movement
 000030F0  6600 0012                196      BNE     fake_gamestate  branch to display a message if the gamestate is undifined
 000030F4                           197      
 000030F4  4E75                     198      rts                     Return out of subroutine
 000030F6                           199  
 000030F6                           200  invalid_input:
-000030F6  43F9 00003B2C            201      lea     input_error_msg,A1 assign message to address register A1
+000030F6  43F9 00003B9E            201      lea     input_error_msg,A1 assign message to address register A1
 000030FC  103C 000E                202      move.b  #14,D0          move literal 14 to DO
 00003100  4E4F                     203      trap    #15             Display the error message
 00003102                           204      
 00003102  60A4                     205      bra     input           Go back to taking input
 00003104                           206      
 00003104                           207  fake_gamestate:
-00003104  43F9 00003B53            208      lea     fake_gamestate_msg,A1     assign message to address register A1
+00003104  43F9 00003BC5            208      lea     fake_gamestate_msg,A1     assign message to address register A1
 0000310A  103C 000E                209      move.b  #14,D0          move literal 14 to DO
 0000310E  4E4F                     210      trap    #15             Display the error message
 00003110  4E75                     211      rts
@@ -218,632 +218,715 @@ Created On: 11/03/2019 15:55:21
 00003112                           214  *----------------Gameloop (main loop)-------------------
 00003112                           215  *------------------------------------------------------- 
 00003112                           216  gameloop:
-00003112  6100 0026                217      bsr     update          branch to update game subroutine 
-00003116  6100 0084                218      bsr     clear_screen    clears the screen         
-0000311A  6100 0020                219      bsr     draw            branch to draw screen subroutine
-0000311E                           220      
-0000311E  6100 0026                221      bsr     gameplay        branch to gameplay subroutine
-00003122                           222     
-00003122  60EE                     223      bra     gameloop        Continue looping the game loop     
-00003124                           224      
-00003124  6100 0076                225      bsr     clear_screen    clears the screen
-00003128  6100 0032                226      bsr     hud             branch to display HUD subroutine
-0000312C  6100 006E                227      bsr     clear_screen    clears the screen
-00003130  6100 0076                228      bsr     replay          branch to replay game subroutine
-00003134  6100 0066                229      bsr     clear_screen    clears the screen
-00003138  4E75                     230      rts                     return from gameloop: subroutine
-0000313A                           231  
-0000313A                           232  *-------------------------------------------------------
-0000313A                           233  *----------------Update Quest Progress------------------
-0000313A                           234  *  Complete Quest
-0000313A                           235  *------------------------------------------------------- 
-0000313A                           236  update:
-0000313A                           237      *Add update code here
-0000313A  4E75                     238      rts
-0000313C                           239  *-------------------------------------------------------
-0000313C                           240  *-----------------Draw Quest Updates--------------------
-0000313C                           241  * Draw the game progress information, status regarding
-0000313C                           242  * quest
-0000313C                           243  *------------------------------------------------------- 
-0000313C                           244  draw:
-0000313C  0C14 0005                245      CMP.B   #5,(A4)     Check which state the game is in
-00003140  6700 01F8                246      BEQ     draw_loop   If in the movement state, draw the map
-00003144  4E75                     247      rts
-00003146                           248  
-00003146                           249  *-------------------------------------------------------
-00003146                           250  *---Game Play (Quest Progress)--------------------------
-00003146                           251  *------------------------------------------------------- 
-00003146                           252  gameplay:
-00003146  6100 0086                253      bsr     endl        Break to a new line
-0000314A  0C14 0000                254      CMP.B   #0,(A4)     Check which stage the game is in
-0000314E  6700 FED0                255      BEQ     pick_role   branch to the pick role subroutine
-00003152  0C14 0005                256      CMP.B   #5,(A4)     Check which stage the game is in
-00003156  6700 008C                257      BEQ     movement    branch to the movement subroutine
-0000315A  4E75                     258      rts                 Return from 'gameplay' subroutine
-0000315C                           259  
-0000315C                           260  *-------------------------------------------------------
-0000315C                           261  *-----------------Heads Up Display (Score)--------------
-0000315C                           262  * Retrieves the score from memory location
-0000315C                           263  *-------------------------------------------------------   
-0000315C                           264  hud:
-0000315C                           265  
-0000315C  6100 0070                266      bsr     endl
-00003160  6100 001C                267      bsr     decorate
-00003164  43F9 00003902            268      lea     hud_msg,A1
-0000316A  103C 000E                269      move.b  #14,D0
-0000316E  4E4F                     270      trap    #15
-00003170  1213                     271      move.b  (A3),D1     retrieve the value A3 point to and move to D1
-00003172  103C 0003                272      move.b  #3,D0       move literal 3 to D0
-00003176  4E4F                     273      trap    #15         intrepret value in D0, which 3 which displays D1
-00003178  6100 0004                274      bsr     decorate
-0000317C  4E75                     275      rts
-0000317E                           276  
-0000317E                           277  *-------------------------------------------------------
-0000317E                           278  *------------------Screen Decoration--------------------
+00003112  6100 00D2                217      bsr     clear_screen    clears the screen  
+00003116  6100 0066                218      bsr     draw            branch to draw screen subroutine
+0000311A  6100 0008                219      bsr     update          branch to update game subroutine 
+0000311E  6100 0068                220      bsr     gameplay        branch to gameplay subroutine
+00003122  60EE                     221      bra     gameloop        Continue looping the game loop     
+00003124                           222      
+00003124                           223      *bsr     clear_screen    clears the screen
+00003124                           224      *bsr     hud             branch to display HUD subroutine
+00003124                           225      *bsr     clear_screen    clears the screen
+00003124                           226      *bsr     replay          branch to replay game subroutine
+00003124                           227      *bsr     clear_screen    clears the screen
+00003124                           228      *rts                     return from gameloop: subroutine
+00003124                           229  
+00003124                           230  *-------------------------------------------------------
+00003124                           231  *----------------Update Quest Progress------------------
+00003124                           232  *  Complete Quest
+00003124                           233  *------------------------------------------------------- 
+00003124                           234  update:
+00003124  0C14 0005                235      CMP.B   #5,(A4)         Check which state the game is in
+00003128  6700 0004                236      BEQ     enemy_check     Check for enemies if in movement state
+0000312C  4E75                     237      rts
+0000312E                           238      
+0000312E                           239  enemy_check:
+0000312E  3238 6004                240      move.w  $6004,D1    Move the enemy position to D1
+00003132  340E                     241      move.w  A6,D2       Move the player position to D2
+00003134                           242      
+00003134                           243      *Check if the player is beside an enemy
+00003134  0442 0010                244      sub.w   #16,D2          Check north
+00003138  B441                     245      CMP.W   D1,D2           
+0000313A  6700 0020                246      BEQ     enter_combat    Enter the player into combat
+0000313E                           247      
+0000313E  0642 0020                248      add.w   #32,D2          Check south
+00003142  B441                     249      CMP.W   D1,D2           
+00003144  6700 0016                250      BEQ     enter_combat    Enter the player into combat
+00003148                           251      
+00003148  0442 0011                252      sub.w   #17,D2          Check west
+0000314C  B441                     253      CMP.W   D1,D2           
+0000314E  6700 000C                254      BEQ     enter_combat    Enter the player into combat
+00003152                           255      
+00003152  5442                     256      add.w   #2,D2           Check east
+00003154  B441                     257      CMP.W   D1,D2           
+00003156  6700 0004                258      BEQ     enter_combat    Enter the player into combat
+0000315A                           259      
+0000315A  4E75                     260      rts     Return if not touching an enemy
+0000315C                           261      
+0000315C                           262  enter_combat:
+0000315C  5941                     263      sub.w   #4,D1       Get the memory address of the enemy opposed to it's position
+0000315E  3041                     264      move.w  D1,A0       Move the enemy address to address register A0 to modify it
+00003160  18BC 0006                265      move.b  #6,(A4)     Move to combat state
+00003164                           266      
+00003164  6100 00B2                267      bsr     endl        Line break
+00003168                           268      
+00003168  43F9 00003E66            269      LEA     encounter_msg,A1    Load the encounter message int A1
+0000316E  103C 000E                270      move.b  #14,D0              Move #14 to D0 to display message
+00003172  4E4F                     271      trap    #15                 Display the loaded message
+00003174                           272      
+00003174  6100 021C                273      bsr     press_continue      Branch to the press to continue subroutine
+00003178                           274      
+00003178  6100 006C                275      bsr     clear_screen        Clear the screen
+0000317C                           276      
+0000317C  4E75                     277      rts
+0000317E                           278      
 0000317E                           279  *-------------------------------------------------------
-0000317E                           280  decorate:
-0000317E  163C 003C                281      move.b  #60, D3
-00003182  6100 004A                282      bsr     endl
-00003186                           283  out:
-00003186  43F9 000038D2            284      lea     loop_msg,A1
-0000318C  103C 000E                285      move.b  #14,D0
-00003190  4E4F                     286      trap    #15
-00003192  5343                     287      sub     #1,D3   decrement loop counter
-00003194  66F0                     288      bne     out     repeat until D0=0
-00003196  6100 0036                289      bsr     endl
-0000319A  4E75                     290      rts
-0000319C                           291      
-0000319C                           292  clear_screen: 
-0000319C  103C 000B                293      move.b  #11,D0      clear screen
-000031A0  323C FF00                294      move.w  #$ff00,D1
-000031A4  4E4F                     295      trap    #15
-000031A6  4E75                     296      rts
-000031A8                           297  *-------------------------------------------------------
-000031A8                           298  *------------------------Replay-------------------------
-000031A8                           299  *-------------------------------------------------------
-000031A8                           300  replay:
-000031A8  6100 0024                301      bsr     endl
-000031AC  43F9 000038D4            302      lea     replay_msg,A1
-000031B2  103C 000E                303      move.b  #14,D0
-000031B6  4E4F                     304      trap    #15
-000031B8                           305      
-000031B8  103C 0004                306      move.b  #4,D0
-000031BC  4E4F                     307      trap    #15
-000031BE                           308  
-000031BE  1ABC 0000                309      move.b  #0,(A5)     Reset the game state for restart
-000031C2                           310      
-000031C2  B27C 0000                311      cmp     #exit,D1
-000031C6  6700 FE3E                312      beq     end         if SR Z register contains 1 beq => Branch Equals
-000031CA  6100 FF46                313      bsr     gameloop
-000031CE                           314  
-000031CE                           315  endl:
-000031CE  48E7 8040                316      movem.l D0/A1,-(A7)
-000031D2  303C 000E                317      move    #14,D0
-000031D6  43F9 00003728            318      lea     crlf,A1
-000031DC  4E4F                     319      trap    #15
-000031DE  4CDF 0201                320      movem.l (A7)+,D0/A1
-000031E2  4E75                     321      rts
-000031E4                           322          
-000031E4                           323  *-------------------------------------------------------
-000031E4                           324  *----------------------Manage Movement------------------
-000031E4                           325  *-------------------------------------------------------
-000031E4                           326  movement:
-000031E4  43F9 00003D2A            327      lea     movement_msg,A1 Load the movement message
-000031EA  103C 000E                328      move.b  #14,D0          Move literal 14 for display message trap command
-000031EE  4E4F                     329      trap    #15             Display the loaded message
-000031F0                           330  
-000031F0  1A3C 0004                331      move.b  #4,D5           Move the number 3 to D5 to tell the program how many options there are
-000031F4                           332      
-000031F4  6100 FEB2                333      bsr     input           branch to the input subroutine
-000031F8  4E75                     334      rts
-000031FA                           335  
-000031FA                           336  *-------------------------------------------------------
-000031FA                           337  *-------------------Check Wall Collisions---------------
-000031FA                           338  *-------------------------------------------------------
-000031FA                           339  wall_collisions:
-000031FA                           340      *Check collisions in the movement direction
-000031FA  B23C 0001                341      CMP.B   #1,D1       Check the movement direction
-000031FE  6700 001C                342      BEQ     move_north  Branch to Display the corridor type
-00003202                           343      
-00003202  B23C 0002                344      CMP.B   #2,D1       Check the movement direction
-00003206  6700 0052                345      BEQ     move_south  Branch to Display the corridor type
-0000320A                           346      
-0000320A  B23C 0003                347      CMP.B   #3,D1       Check the movement direction
-0000320E  6700 0088                348      BEQ     move_west   Branch to Display the corridor type
-00003212                           349      
-00003212  B23C 0004                350      CMP.B   #4,D1       Check the movement direction
-00003216  6700 00BC                351      BEQ     move_east   Branch to Display the corridor type
-0000321A                           352      
-0000321A  4E75                     353      rts
-0000321C                           354      
-0000321C                           355  move_north:
-0000321C                           356      *Check if the tile is any of the corridor types with a wall at the top
-0000321C  0C16 0002                357      CMP.B   #2,(A6)
-00003220  6700 00EE                358      BEQ     movement_blocked
-00003224  0C16 0003                359      CMP.B   #3,(A6)
-00003228  6700 00E6                360      BEQ     movement_blocked
-0000322C  0C16 0006                361      CMP.B   #6,(A6)
-00003230  6700 00DE                362      BEQ     movement_blocked
-00003234  0C16 0007                363      CMP.B   #7,(A6)
-00003238  6700 00D6                364      BEQ     movement_blocked
-0000323C  0C16 000B                365      CMP.B   #11,(A6)
-00003240  6700 00CE                366      BEQ     movement_blocked
-00003244  0C16 000C                367      CMP.B   #12,(A6)
-00003248  6700 00C6                368      BEQ     movement_blocked
-0000324C  0C16 000D                369      CMP.B   #13,(A6)
-00003250  6700 00BE                370      BEQ     movement_blocked
-00003254                           371      
-00003254  9CFC 0010                372      sub     #16,A6              Move the player north
-00003258                           373      
-00003258  4E75                     374      rts
-0000325A                           375      
-0000325A                           376  move_south:
-0000325A                           377      *Check if the tile is any of the corridor types with a wall at the bottom
-0000325A  0C16 0002                378      CMP.B   #2,(A6)
-0000325E  6700 00B0                379      BEQ     movement_blocked
-00003262  0C16 0004                380      CMP.B   #4,(A6)
-00003266  6700 00A8                381      BEQ     movement_blocked
-0000326A  0C16 0005                382      CMP.B   #5,(A6)
-0000326E  6700 00A0                383      BEQ     movement_blocked
-00003272  0C16 0009                384      CMP.B   #9,(A6)
-00003276  6700 0098                385      BEQ     movement_blocked
-0000327A  0C16 000B                386      CMP.B   #11,(A6)
-0000327E  6700 0090                387      BEQ     movement_blocked
-00003282  0C16 000D                388      CMP.B   #13,(A6)
-00003286  6700 0088                389      BEQ     movement_blocked
-0000328A  0C16 000E                390      CMP.B   #14,(A6)
-0000328E  6700 0080                391      BEQ     movement_blocked
-00003292                           392      
-00003292  DCFC 0010                393      add     #16,A6              Move the player south
-00003296                           394      
-00003296  4E75                     395      rts
-00003298                           396  
-00003298                           397  move_west:
-00003298                           398      *Check if the tile is any of the corridor types with a wall to the left
-00003298  0C16 0001                399      CMP.B   #1,(A6)
-0000329C  6700 0072                400      BEQ     movement_blocked
-000032A0  0C16 0003                401      CMP.B   #3,(A6)
-000032A4  6700 006A                402      BEQ     movement_blocked
-000032A8  0C16 0004                403      CMP.B   #4,(A6)
-000032AC  6700 0062                404      BEQ     movement_blocked
-000032B0  0C16 0008                405      CMP.B   #8,(A6)
-000032B4  6700 005A                406      BEQ     movement_blocked
-000032B8  0C16 000B                407      CMP.B   #11,(A6)
-000032BC  6700 0052                408      BEQ     movement_blocked
-000032C0  0C16 000C                409      CMP.B   #12,(A6)
-000032C4  6700 004A                410      BEQ     movement_blocked
-000032C8  0C16 000E                411      CMP.B   #14,(A6)
-000032CC  6700 0042                412      BEQ     movement_blocked
-000032D0                           413      
-000032D0  534E                     414      sub     #1,A6               Move the player west
-000032D2                           415      
-000032D2                           416      *lea     move_west_msg,A1    Load the message
-000032D2                           417      *move.b  #14,D0              Move the trap command to display a message
-000032D2                           418      *trap    #15                 Display the move north message
-000032D2                           419      *bsr     press_continue          Pause the game until a key is pressed
-000032D2                           420      
-000032D2  4E75                     421      rts
-000032D4                           422      
-000032D4                           423  move_east:
-000032D4                           424      *Check if the tile is any of the corridor types with a wall to the right
-000032D4  0C16 0001                425      CMP.B   #1,(A6)
-000032D8  6700 0036                426      BEQ     movement_blocked
-000032DC  0C16 0005                427      CMP.B   #5,(A6)
-000032E0  6700 002E                428      BEQ     movement_blocked
-000032E4  0C16 0006                429      CMP.B   #6,(A6)
-000032E8  6700 0026                430      BEQ     movement_blocked
-000032EC  0C16 000A                431      CMP.B   #10,(A6)
-000032F0  6700 001E                432      BEQ     movement_blocked
-000032F4  0C16 000C                433      CMP.B   #12,(A6)
-000032F8  6700 0016                434      BEQ     movement_blocked
-000032FC  0C16 000D                435      CMP.B   #13,(A6)
-00003300  6700 000E                436      BEQ     movement_blocked
-00003304  0C16 000E                437      CMP.B   #14,(A6)
-00003308  6700 0006                438      BEQ     movement_blocked
-0000330C                           439      
-0000330C  524E                     440      add     #1,A6                   Move the player east
-0000330E                           441      
-0000330E  4E75                     442      rts
-00003310                           443  
-00003310                           444  movement_blocked:
-00003310  43F9 00003DA3            445      lea     movement_blocked_msg,A1 Load the message
-00003316  103C 000E                446      move.b  #14,D0                  Move the trap command to display a message
-0000331A  4E4F                     447      trap    #15                     Display the movement blocked message
-0000331C  6100 0004                448      bsr     press_continue          Pause the game until a key is pressed
-00003320                           449      
-00003320  4E75                     450      rts                             Return from the subroutine
-00003322                           451      
-00003322                           452  *-------------------------------------------------------
-00003322                           453  *-------------------Misc Subroutines--------------------
-00003322                           454  *-------------------------------------------------------
-00003322                           455  press_continue:
-00003322  6100 FEAA                456      bsr     endl
-00003326                           457  
-00003326  43F9 00003DBE            458      lea     continue_msg,A1     Load message into A1
-0000332C  103C 000E                459      move.b  #14,D0              Move the trap command to display a message
-00003330  4E4F                     460      trap    #15                 display the "press any ket to continue" text
-00003332                           461      
-00003332  103C 0004                462      move.b  #4,D0               Move the trap command to take input
-00003336  4E4F                     463      trap    #15                 take input to freeze the game
-00003338  4E75                     464      rts                         Return from the 'press continue' subroutine
-0000333A                           465      
-0000333A                           466  *-------------------------------------------------------
-0000333A                           467  *----------------------Draw loop------------------------
-0000333A                           468  *-------------------------------------------------------
-0000333A                           469  draw_loop:
-0000333A  45F8 5000                470      lea     $5000,A2        Load starting memory location into A7
-0000333E  1C3C 0000                471      move.b  #0,D6           Data register used for rows
-00003342  1E3C 0000                472      move.b  #0,D7           Data register used for columns
-00003346  7200                     473      move.l  #0,D1           Clear the D1 data register
-00003348                           474      
-00003348  6100 0004                475      bsr     loop_rows       Loop for every row
-0000334C  4E75                     476      rts
-0000334E                           477      
-0000334E                           478  loop_rows:
-0000334E  BC7C 0016                479      CMP     #22,D6          Check the rows don't go out of bounds
-00003352  6E00 002C                480      BGT     end_loop        If the rows are greater than 22 end the loop
+0000317E                           280  *-----------------Draw Quest Updates--------------------
+0000317E                           281  * Draw the game progress information, status regarding
+0000317E                           282  * quest
+0000317E                           283  *------------------------------------------------------- 
+0000317E                           284  draw:
+0000317E  0C14 0005                285      CMP.B   #5,(A4)     Check which state the game is in
+00003182  6700 0226                286      BEQ     draw_loop   If in the movement state, draw the map
+00003186  4E75                     287      rts
+00003188                           288  
+00003188                           289  *-------------------------------------------------------
+00003188                           290  *---Game Play (Quest Progress)--------------------------
+00003188                           291  *------------------------------------------------------- 
+00003188                           292  gameplay:
+00003188  6100 008E                293      bsr     endl        Break to a new line
+0000318C  0C14 0000                294      CMP.B   #0,(A4)     Check which stage the game is in
+00003190  6700 FE8E                295      BEQ     pick_role   branch to the pick role subroutine
+00003194  0C14 0005                296      CMP.B   #5,(A4)     Check which stage the game is in
+00003198  6700 0094                297      BEQ     movement    branch to the movement subroutine
+0000319C  0C14 0006                298      CMP.B   #6,(A4)     Check which stage the game is in
+000031A0  6700 01CA                299      BEQ     combat      branch to the combat subroutine
+000031A4  4E75                     300      rts                 Return from 'gameplay' subroutine
+000031A6                           301  
+000031A6                           302  *-------------------------------------------------------
+000031A6                           303  *-----------------Heads Up Display (Score)--------------
+000031A6                           304  * Retrieves the score from memory location
+000031A6                           305  *-------------------------------------------------------   
+000031A6                           306  hud:
+000031A6                           307  
+000031A6  6100 0070                308      bsr     endl
+000031AA  6100 001C                309      bsr     decorate
+000031AE  43F9 00003974            310      lea     hud_msg,A1
+000031B4  103C 000E                311      move.b  #14,D0
+000031B8  4E4F                     312      trap    #15
+000031BA  1213                     313      move.b  (A3),D1     retrieve the value A3 point to and move to D1
+000031BC  103C 0003                314      move.b  #3,D0       move literal 3 to D0
+000031C0  4E4F                     315      trap    #15         intrepret value in D0, which 3 which displays D1
+000031C2  6100 0004                316      bsr     decorate
+000031C6  4E75                     317      rts
+000031C8                           318  
+000031C8                           319  *-------------------------------------------------------
+000031C8                           320  *------------------Screen Decoration--------------------
+000031C8                           321  *-------------------------------------------------------
+000031C8                           322  decorate:
+000031C8  163C 003C                323      move.b  #60, D3
+000031CC  6100 004A                324      bsr     endl
+000031D0                           325  out:
+000031D0  43F9 00003944            326      lea     loop_msg,A1
+000031D6  103C 000E                327      move.b  #14,D0
+000031DA  4E4F                     328      trap    #15
+000031DC  5343                     329      sub     #1,D3   decrement loop counter
+000031DE  66F0                     330      bne     out     repeat until D0=0
+000031E0  6100 0036                331      bsr     endl
+000031E4  4E75                     332      rts
+000031E6                           333      
+000031E6                           334  clear_screen: 
+000031E6  103C 000B                335      move.b  #11,D0      clear screen
+000031EA  323C FF00                336      move.w  #$ff00,D1
+000031EE  4E4F                     337      trap    #15
+000031F0  4E75                     338      rts
+000031F2                           339  *-------------------------------------------------------
+000031F2                           340  *------------------------Replay-------------------------
+000031F2                           341  *-------------------------------------------------------
+000031F2                           342  replay:
+000031F2  6100 0024                343      bsr     endl
+000031F6  43F9 00003946            344      lea     replay_msg,A1
+000031FC  103C 000E                345      move.b  #14,D0
+00003200  4E4F                     346      trap    #15
+00003202                           347      
+00003202  103C 0004                348      move.b  #4,D0
+00003206  4E4F                     349      trap    #15
+00003208                           350  
+00003208  1ABC 0000                351      move.b  #0,(A5)     Reset the game state for restart
+0000320C                           352      
+0000320C  B27C 0000                353      cmp     #exit,D1
+00003210  6700 FDF4                354      beq     end         if SR Z register contains 1 beq => Branch Equals
+00003214  6100 FEFC                355      bsr     gameloop
+00003218                           356  
+00003218                           357  endl:
+00003218  48E7 8040                358      movem.l D0/A1,-(A7)
+0000321C  303C 000E                359      move    #14,D0
+00003220  43F9 0000379A            360      lea     crlf,A1
+00003226  4E4F                     361      trap    #15
+00003228  4CDF 0201                362      movem.l (A7)+,D0/A1
+0000322C  4E75                     363      rts
+0000322E                           364          
+0000322E                           365  *-------------------------------------------------------
+0000322E                           366  *----------------------Manage Movement------------------
+0000322E                           367  *-------------------------------------------------------
+0000322E                           368  movement:
+0000322E  43F9 00003D9C            369      lea     movement_msg,A1 Load the movement message
+00003234  103C 000E                370      move.b  #14,D0          Move literal 14 for display message trap command
+00003238  4E4F                     371      trap    #15             Display the loaded message
+0000323A                           372  
+0000323A  1A3C 0004                373      move.b  #4,D5           Move the number 4 to D5 to tell the program how many options there are
+0000323E                           374      
+0000323E  6100 FE68                375      bsr     input           branch to the input subroutine
+00003242  4E75                     376      rts
+00003244                           377  
+00003244                           378  *-------------------------------------------------------
+00003244                           379  *-------------------Check Wall Collisions---------------
+00003244                           380  *-------------------------------------------------------
+00003244                           381  wall_collisions:
+00003244                           382      *Check collisions in the movement direction
+00003244  B23C 0001                383      CMP.B   #1,D1       Check the movement direction
+00003248  6700 001C                384      BEQ     move_north  Branch to Display the corridor type
+0000324C                           385      
+0000324C  B23C 0002                386      CMP.B   #2,D1       Check the movement direction
+00003250  6700 0052                387      BEQ     move_south  Branch to Display the corridor type
+00003254                           388      
+00003254  B23C 0003                389      CMP.B   #3,D1       Check the movement direction
+00003258  6700 0088                390      BEQ     move_west   Branch to Display the corridor type
+0000325C                           391      
+0000325C  B23C 0004                392      CMP.B   #4,D1       Check the movement direction
+00003260  6700 00BC                393      BEQ     move_east   Branch to Display the corridor type
+00003264                           394      
+00003264  4E75                     395      rts
+00003266                           396      
+00003266                           397  move_north:
+00003266                           398      *Check if the tile is any of the corridor types with a wall at the top
+00003266  0C16 0002                399      CMP.B   #2,(A6)
+0000326A  6700 00EE                400      BEQ     movement_blocked
+0000326E  0C16 0003                401      CMP.B   #3,(A6)
+00003272  6700 00E6                402      BEQ     movement_blocked
+00003276  0C16 0006                403      CMP.B   #6,(A6)
+0000327A  6700 00DE                404      BEQ     movement_blocked
+0000327E  0C16 0007                405      CMP.B   #7,(A6)
+00003282  6700 00D6                406      BEQ     movement_blocked
+00003286  0C16 000B                407      CMP.B   #11,(A6)
+0000328A  6700 00CE                408      BEQ     movement_blocked
+0000328E  0C16 000C                409      CMP.B   #12,(A6)
+00003292  6700 00C6                410      BEQ     movement_blocked
+00003296  0C16 000D                411      CMP.B   #13,(A6)
+0000329A  6700 00BE                412      BEQ     movement_blocked
+0000329E                           413      
+0000329E  9CFC 0010                414      sub     #16,A6              Move the player north
+000032A2                           415      
+000032A2  4E75                     416      rts
+000032A4                           417      
+000032A4                           418  move_south:
+000032A4                           419      *Check if the tile is any of the corridor types with a wall at the bottom
+000032A4  0C16 0002                420      CMP.B   #2,(A6)
+000032A8  6700 00B0                421      BEQ     movement_blocked
+000032AC  0C16 0004                422      CMP.B   #4,(A6)
+000032B0  6700 00A8                423      BEQ     movement_blocked
+000032B4  0C16 0005                424      CMP.B   #5,(A6)
+000032B8  6700 00A0                425      BEQ     movement_blocked
+000032BC  0C16 0009                426      CMP.B   #9,(A6)
+000032C0  6700 0098                427      BEQ     movement_blocked
+000032C4  0C16 000B                428      CMP.B   #11,(A6)
+000032C8  6700 0090                429      BEQ     movement_blocked
+000032CC  0C16 000D                430      CMP.B   #13,(A6)
+000032D0  6700 0088                431      BEQ     movement_blocked
+000032D4  0C16 000E                432      CMP.B   #14,(A6)
+000032D8  6700 0080                433      BEQ     movement_blocked
+000032DC                           434      
+000032DC  DCFC 0010                435      add     #16,A6              Move the player south
+000032E0                           436      
+000032E0  4E75                     437      rts
+000032E2                           438  
+000032E2                           439  move_west:
+000032E2                           440      *Check if the tile is any of the corridor types with a wall to the left
+000032E2  0C16 0001                441      CMP.B   #1,(A6)
+000032E6  6700 0072                442      BEQ     movement_blocked
+000032EA  0C16 0003                443      CMP.B   #3,(A6)
+000032EE  6700 006A                444      BEQ     movement_blocked
+000032F2  0C16 0004                445      CMP.B   #4,(A6)
+000032F6  6700 0062                446      BEQ     movement_blocked
+000032FA  0C16 0008                447      CMP.B   #8,(A6)
+000032FE  6700 005A                448      BEQ     movement_blocked
+00003302  0C16 000B                449      CMP.B   #11,(A6)
+00003306  6700 0052                450      BEQ     movement_blocked
+0000330A  0C16 000C                451      CMP.B   #12,(A6)
+0000330E  6700 004A                452      BEQ     movement_blocked
+00003312  0C16 000E                453      CMP.B   #14,(A6)
+00003316  6700 0042                454      BEQ     movement_blocked
+0000331A                           455      
+0000331A  534E                     456      sub     #1,A6               Move the player west
+0000331C                           457      
+0000331C                           458      *lea     move_west_msg,A1    Load the message
+0000331C                           459      *move.b  #14,D0              Move the trap command to display a message
+0000331C                           460      *trap    #15                 Display the move north message
+0000331C                           461      *bsr     press_continue          Pause the game until a key is pressed
+0000331C                           462      
+0000331C  4E75                     463      rts
+0000331E                           464      
+0000331E                           465  move_east:
+0000331E                           466      *Check if the tile is any of the corridor types with a wall to the right
+0000331E  0C16 0001                467      CMP.B   #1,(A6)
+00003322  6700 0036                468      BEQ     movement_blocked
+00003326  0C16 0005                469      CMP.B   #5,(A6)
+0000332A  6700 002E                470      BEQ     movement_blocked
+0000332E  0C16 0006                471      CMP.B   #6,(A6)
+00003332  6700 0026                472      BEQ     movement_blocked
+00003336  0C16 000A                473      CMP.B   #10,(A6)
+0000333A  6700 001E                474      BEQ     movement_blocked
+0000333E  0C16 000C                475      CMP.B   #12,(A6)
+00003342  6700 0016                476      BEQ     movement_blocked
+00003346  0C16 000D                477      CMP.B   #13,(A6)
+0000334A  6700 000E                478      BEQ     movement_blocked
+0000334E  0C16 000E                479      CMP.B   #14,(A6)
+00003352  6700 0006                480      BEQ     movement_blocked
 00003356                           481      
-00003356  1E3C 0000                482      move.b  #0,D7           Reset to column 0
-0000335A  6100 000A                483      bsr     loop_columns    Loop for every column
-0000335E                           484      
-0000335E  5206                     485      add.b   #1,D6           Add to the rows
-00003360                           486      
-00003360  6100 FE6C                487      bsr     endl            Break to the next line
-00003364  60E8                     488      bra     loop_rows       Loop through the rows again
-00003366                           489      
-00003366                           490  loop_columns:
-00003366  BE3C 000F                491      CMP.B   #15,D7              Check the rows don't go out of bounds
-0000336A  6E00 0014                492      BGT     end_loop            If the rows are greater than 22 end the loop
-0000336E                           493      
-0000336E  6100 0012                494      bsr     draw_tile           Draw the current tile
-00003372  6100 00B8                495      bsr     check_for_player    Draw the player in the current tile if they're there
-00003376  6100 0108                496      bsr     check_for_enemy
-0000337A                           497      
-0000337A  5207                     498      add.b   #1,D7               Add to the column count
-0000337C  524A                     499      add     #1,A2               Move to the next memory location
-0000337E  60E6                     500      bra     loop_columns        Loop the columns again
-00003380                           501  
-00003380                           502  end_loop:
-00003380  4E75                     503      rts                         Return once a loop is finished
-00003382                           504      
-00003382                           505  *-------------------------------------------------------
-00003382                           506  *----------------------Draw tile------------------------
-00003382                           507  *-------------------------------------------------------
-00003382                           508  *Draws the tile at the address in the address register A2
-00003382                           509  draw_tile:
-00003382  0C12 00FF                510      CMP.B   #255,(A2)           Check if the value is undifined
-00003386  6700 005E                511      BEQ     draw_blocked_tile   Draw the blank tile
-0000338A                           512      
-0000338A  0C12 0001                513      CMP.B   #1,(A2)
-0000338E  6700 0064                514      BEQ     draw_both_tile
-00003392  0C12 0003                515      CMP.B   #3,(A2)
-00003396  6700 006A                516      BEQ     draw_left_tile
-0000339A  0C12 0004                517      CMP.B   #4,(A2)
-0000339E  6700 0062                518      BEQ     draw_left_tile
-000033A2  0C12 0005                519      CMP.B   #5,(A2)
-000033A6  6700 0068                520      BEQ     draw_right_tile
-000033AA  0C12 0006                521      CMP.B   #6,(A2)
-000033AE  6700 0060                522      BEQ     draw_right_tile
-000033B2  0C12 0008                523      CMP.B   #8,(A2)
-000033B6  6700 004A                524      BEQ     draw_left_tile
-000033BA  0C12 000A                525      CMP.B   #10,(A2)
-000033BE  6700 0050                526      BEQ     draw_right_tile
-000033C2  0C12 000B                527      CMP.B   #11,(A2)
-000033C6  6700 003A                528      BEQ     draw_left_tile
-000033CA  0C12 000C                529      CMP.B   #12,(A2)
-000033CE  6700 0024                530      BEQ     draw_both_tile
-000033D2  0C12 000D                531      CMP.B   #13,(A2)
-000033D6  6700 0038                532      BEQ     draw_right_tile
-000033DA  0C12 000E                533      CMP.B   #14,(A2)
-000033DE  6700 0014                534      BEQ     draw_both_tile
-000033E2                           535      
-000033E2  6000 003A                536      BRA     draw_blank_tile     Draw the blank tile
-000033E6                           537      
-000033E6                           538  draw_blocked_tile:
-000033E6  43F9 00003DEC            539      lea     blocked_tile,A1
-000033EC  103C 000E                540      move.b  #14,D0
-000033F0  4E4F                     541      trap    #15
-000033F2  4E75                     542      rts
-000033F4                           543      
-000033F4                           544  draw_both_tile:
-000033F4  43F9 00003DE0            545      lea     both_tile,A1
-000033FA  103C 000E                546      move.b  #14,D0
-000033FE  4E4F                     547      trap    #15
-00003400  4E75                     548      rts
-00003402                           549      
-00003402                           550  draw_left_tile:
-00003402  43F9 00003DE4            551      lea     left_tile,A1
-00003408  103C 000E                552      move.b  #14,D0
-0000340C  4E4F                     553      trap    #15
-0000340E  4E75                     554      rts
-00003410                           555      
-00003410                           556  draw_right_tile:
-00003410  43F9 00003DE8            557      lea     right_tile,A1
-00003416  103C 000E                558      move.b  #14,D0
-0000341A  4E4F                     559      trap    #15
-0000341C  4E75                     560      rts
-0000341E                           561      
-0000341E                           562  draw_blank_tile:
-0000341E  43F9 00003DDC            563      lea     blank_tile,A1
-00003424  103C 000E                564      move.b  #14,D0
-00003428  4E4F                     565      trap    #15
-0000342A  4E75                     566      rts
-0000342C                           567      
-0000342C                           568  check_for_player:
-0000342C  B4CE                     569      CMP.W   A6,A2
-0000342E  6700 0004                570      BEQ     draw_player
-00003432  4E75                     571      rts
-00003434                           572      
-00003434                           573  draw_player:
-00003434  323C 00FF                574      move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
-00003438  103C 000B                575      move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-0000343C  4E4F                     576      trap    #15             Trap to get the cursor position in D1
-0000343E                           577      
-0000343E  0441 0200                578      sub.w   #512,D1         Move the cursor back by two columns
-00003442  4E4F                     579      trap    #15             Set the cursor position with trap command 11
-00003444                           580      
-00003444  2601                     581      move.l  D1,D3          Move the value in D1 to D3 for storage
-00003446                           582      
-00003446  103C 0015                583      move.b  #21,D0          Move #21 to D0 for trap command 21
-0000344A  223C 0000FF00            584      move.l  #GREEN,D1       Move the colour green to D1
-00003450  243C 01090000            585      move.l  #FONT,D2        Move the font to D2
-00003456  4E4F                     586      trap    #15             Set the colour
-00003458                           587      
-00003458  43F9 00003DF0            588      lea     player_mark,A1      load the player symbol
-0000345E  103C 000E                589      move.b  #14,D0              Move #14 to D0 for trap command 14
-00003462  4E4F                     590      trap    #15                 Draw the player mark
-00003464                           591      
-00003464  103C 0015                592      move.b  #21,D0          Move #21 to D0 for trap command 21
-00003468  223C 00FFFFFF            593      move.l  #WHITE,D1       Move the colour green to D1
-0000346E  4E4F                     594      trap    #15             Set the colour
-00003470  4241                     595      clr     D1
-00003472                           596      
-00003472  2203                     597      move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
-00003474                           598      
-00003474  0641 0200                599      add.w   #512,D1         Move the cursor position two columns forward
-00003478  103C 000B                600      move.b  #11,D0          Move byte #11 for trap command 11 
-0000347C  4E4F                     601      trap    #15             Set the cursor position
-0000347E                           602      
-0000347E  4E75                     603      rts
-00003480                           604      
-00003480                           605  check_for_enemy:
-00003480  41F8 6004                606      LEA     $6004,A0
-00003484  B4C8                     607      CMP.W   A0,A2
-00003486  6700 0004                608      BEQ     draw_enemy
-0000348A  4E75                     609      rts
-0000348C                           610      
-0000348C                           611  draw_enemy:
-0000348C  323C 00FF                612      move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
-00003490  103C 000B                613      move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-00003494  4E4F                     614      trap    #15             Trap to get the cursor position in D1
-00003496                           615      
-00003496  0441 0200                616      sub.w   #512,D1         Move the cursor back by two columns
-0000349A  4E4F                     617      trap    #15             Set the cursor position with trap command 11
-0000349C                           618      
-0000349C  2601                     619      move.l  D1,D3          Move the value in D1 to D3 for storage
-0000349E                           620      
-0000349E  103C 0015                621      move.b  #21,D0          Move #21 to D0 for trap command 21
-000034A2  223C 000000FF            622      move.l  #RED,D1       Move the colour green to D1
-000034A8  243C 01090000            623      move.l  #FONT,D2        Move the font to D2
-000034AE  4E4F                     624      trap    #15             Set the colour
-000034B0                           625      
-000034B0  43F9 00003DF0            626      lea     player_mark,A1      load the player symbol
-000034B6  103C 000E                627      move.b  #14,D0              Move #14 to D0 for trap command 14
-000034BA  4E4F                     628      trap    #15                 Draw the player mark
-000034BC                           629      
-000034BC  103C 0015                630      move.b  #21,D0          Move #21 to D0 for trap command 21
-000034C0  223C 00FFFFFF            631      move.l  #WHITE,D1       Move the colour green to D1
-000034C6  4E4F                     632      trap    #15             Set the colour
-000034C8  4241                     633      clr     D1
-000034CA                           634      
-000034CA  2203                     635      move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
-000034CC                           636      
-000034CC  0641 0200                637      add.w   #512,D1         Move the cursor position two columns forward
-000034D0  103C 000B                638      move.b  #11,D0          Move byte #11 for trap command 11 
-000034D4  4E4F                     639      trap    #15             Set the cursor position
-000034D6                           640      
-000034D6  4E75                     641      rts
-000034D8                           642      
-000034D8                           643  *-------------------------------------------------------
-000034D8                           644  *-------------------Setup the world---------------------
-000034D8                           645  *-------------------------------------------------------
-000034D8                           646  setup_world:
-000034D8  11FC 000E 514A           647      move.b  #14,$514A   Setup the starting corridor
-000034DE  11FC 0007 513A           648      move.b  #7,$513A    T junction upwards from starting corridor
-000034E4  11FC 0004 5139           649      move.b  #4,$5139    Left corridor
-000034EA  11FC 0001 5129           650      move.b  #1,$5129
-000034F0  11FC 0001 5119           651      move.b  #1,$5119
-000034F6                           652      
-000034F6  11FC 0004 5108           653      move.b  #4,$5108    First shop
-000034FC  11FC 0000 5109           654      move.b  #0,$5109    Entrance
-00003502  11FC 0005 510A           655      move.b  #5,$510A
-00003508  11FC 0008 50F8           656      move.b  #8,$50F8
-0000350E  11FC 0000 50F9           657      move.b  #0,$50F9
-00003514  11FC 000A 50FA           658      move.b  #10,$50FA
-0000351A  11FC 0003 50E8           659      move.b  #3,$50E8
-00003520  11FC 0007 50E9           660      move.b  #7,$50E9
-00003526  11FC 0006 50EA           661      move.b  #6,$50EA
-0000352C                           662      
-0000352C  11FC 0005 513B           663      move.b  #5,$513B    Right corridor
-00003532  11FC 0001 512B           664      move.b  #1,$512B
-00003538  11FC 0001 511B           665      move.b  #1,$511B
-0000353E  11FC 0008 510B           666      move.b  #8,$510B    Path continues up with a turn off to the right
-00003544                           667      
-00003544  11FC 0002 510C           668      move.b  #2,$510C    Right path
-0000354A  11FC 0002 510D           669      move.b  #2,$510D    Continue right
-00003550  11FC 0005 510E           670      move.b  #5,$510E    Path upwards and to the left
-00003556  11FC 0001 50FE           671      move.b  #1,$50FE    Leads upwards into a room
-0000355C                           672      
-0000355C  11FC 0004 50ED           673      move.b  #4,$50ED    First monster room
-00003562  11FC 0000 50EE           674      move.b  #0,$50EE    Entrance
-00003568  11FC 0005 50EF           675      move.b  #5,$50EF
-0000356E  11FC 0008 50DD           676      move.b  #8,$50DD
-00003574  11FC 0000 50DE           677      move.b  #0,$50DE
-0000357A  11FC 000A 50DF           678      move.b  #10,$50DF
-00003580  11FC 0003 50CD           679      move.b  #3,$50CD
-00003586  11FC 0007 50CE           680      move.b  #7,$50CE
-0000358C  11FC 0006 50CF           681      move.b  #6,$50CF
-00003592                           682      
-00003592  11FC 0001 50FB           683      move.b  #1,$50FB    Path that continues up
-00003598  11FC 0001 50EB           684      move.b  #1,$50EB    Path continues upwards
-0000359E  11FC 0001 50DB           685      move.b  #1,$50DB
-000035A4                           686      
-000035A4                           687      *Bottom row of room
-000035A4  11FC 0004 50C8           688      move.b  #4,$50C8    Large monster room with locked door
-000035AA  11FC 0009 50C9           689      move.b  #9,$50C9
-000035B0  11FC 0009 50CA           690      move.b  #9,$50CA
-000035B6  11FC 0000 50CB           691      move.b  #0,$50CB    Entrance
-000035BC  11FC 0005 50CC           692      move.b  #5,$50CC
-000035C2                           693      *Middle row of room
-000035C2  11FC 0000 50B8           694      move.b  #0,$50B8    Exit to the left
-000035C8  11FC 0000 50B9           695      move.b  #0,$50B9
-000035CE  11FC 0000 50BA           696      move.b  #0,$50BA
-000035D4  11FC 0000 50BB           697      move.b  #0,$50BB
-000035DA  11FC 000A 50BC           698      move.b  #10,$50BC
-000035E0                           699      *Top row of room
-000035E0  11FC 0003 50A8           700      move.b  #3,$50A8
-000035E6  11FC 0007 50A9           701      move.b  #7,$50A9
-000035EC  11FC 0007 50AA           702      move.b  #7,$50AA
-000035F2  11FC 0007 50AB           703      move.b  #7,$50AB    Locked door
-000035F8  11FC 0006 50AC           704      move.b  #6,$50AC
-000035FE                           705      
-000035FE  11FC 0002 50B7           706      move.b  #2,$50B7    Exit large room leftwards
-00003604  11FC 0002 50B6           707      move.b  #2,$50B6    Continue to the left
-0000360A  11FC 0007 50B5           708      move.b  #7,$50B5    Continue to the left and a path downwards
-00003610  11FC 0002 50B4           709      move.b  #2,$50B4    Continue to the left
-00003616                           710      
-00003616  11FC 0003 50A1           711      move.b  #3,$50A1    Room to the left
-0000361C  11FC 0007 50A2           712      move.b  #7,$50A2
-00003622  11FC 0006 50A3           713      move.b  #6,$50A3
-00003628  11FC 0008 50B1           714      move.b  #8,$50B1
-0000362E  11FC 0000 50B2           715      move.b  #0,$50B2
-00003634  11FC 0000 50B3           716      move.b  #0,$50B3    Entrance to the right
-0000363A  11FC 0004 50C1           717      move.b  #4,$50C1
-00003640  11FC 0009 50C2           718      move.b  #9,$50C2
-00003646  11FC 0005 50C3           719      move.b  #5,$50C3
-0000364C                           720      
-0000364C  11FC 0001 50C5           721      move.b  #1,$50C5    Path leading downwards
-00003652  11FC 0001 50D5           722      move.b  #1,$50D5
-00003658  11FC 000A 50E5           723      move.b  #10,$50E5   Path leading downward and to the left
-0000365E  11FC 0002 50E4           724      move.b  #2,$50E4    Path on the left
-00003664  11FC 0002 50E3           725      move.b  #2,$50E3
-0000366A  11FC 0003 50E2           726      move.b  #3,$50E2    Path takes a turn downwards
-00003670  11FC 0001 50F2           727      move.b  #1,$50F2    Path continues downwards
-00003676                           728      
-00003676  11FC 0003 5101           729      move.b  #3,$5101    Regular enemy room
-0000367C  11FC 0000 5102           730      move.b  #0,$5102    Entrance
-00003682  11FC 0006 5103           731      move.b  #6,$5103
-00003688  11FC 0008 5111           732      move.b  #8,$5111
-0000368E  11FC 0000 5112           733      move.b  #0,$5112
-00003694  11FC 000A 5113           734      move.b  #10,$5113
-0000369A  11FC 0004 5121           735      move.b  #4,$5121
-000036A0  11FC 0009 5122           736      move.b  #9,$5122
-000036A6  11FC 000A 5123           737      move.b  #10,$5123   Exit at the bottom
-000036AC                           738      
-000036AC  11FC 0001 50F5           739      move.b  #1,$50F5    Path leading downward
-000036B2  11FC 0001 5105           740      move.b  #1,$5105
-000036B8  11FC 0001 5115           741      move.b  #1,$5115
-000036BE  11FC 0001 5125           742      move.b  #1,$5125
-000036C4                           743      
-000036C4                           744      *Top row of room
-000036C4  11FC 0008 5133           745      move.b  #8,$5133    Large enemy room - Exit at top
-000036CA  11FC 0007 5134           746      move.b  #7,$5134
-000036D0  11FC 0000 5135           747      move.b  #0,$5135    Entrance
-000036D6  11FC 0006 5136           748      move.b  #6,$5136
-000036DC                           749      
-000036DC                           750      *Middle row of room
-000036DC  11FC 0008 5143           751      move.b  #8,$5143
-000036E2  11FC 0000 5144           752      move.b  #0,$5144
-000036E8  11FC 0000 5145           753      move.b  #0,$5145
-000036EE  11FC 000A 5146           754      move.b  #10,$5146
-000036F4                           755      
-000036F4                           756      *Bottom row of room
-000036F4  11FC 0004 5153           757      move.b  #4,$5153
-000036FA  11FC 0009 5154           758      move.b  #9,$5154
-00003700  11FC 0009 5155           759      move.b  #9,$5155
-00003706  11FC 0005 5156           760      move.b  #5,$5156
-0000370C                           761      
-0000370C  4E75                     762      rts
-0000370E                           763  
-0000370E                           764  setup_enemies:
-0000370E  11FC 0005 6000           765      move.b  #5,$6000    Health - Setup the first enemy
-00003714  11FC 0001 6001           766      move.b  #1,$6001    Damage/level
-0000371A  11FC 0001 6002           767      move.b  #1,$6002    Class type (Knight)
-00003720  31FC 0051 6004           768      move.w  #$51,$6004  Move enemy coordinates
-00003726                           769      
-00003726  4E75                     770      rts
-00003728                           771      
-00003728                           772      
-00003728                           773  *-------------------------------------------------------
-00003728                           774  *-------------------Data Delarations--------------------
-00003728                           775  *-------------------------------------------------------
-00003728                           776  
-00003728= 0D 0A 00                 777  crlf:           dc.b    $0D,$0A,0
-0000372B= 2A 2A 2A 2A 2A 2A ...    778  welcome_msg:    dc.b    '************************************************************'
-00003767= 0D 0A                    779                  dc.b    $0D,$0A
-00003769= 41 76 61 6C 6F 6E ...    780                  dc.b    'Avalon: The Legend Lives'
-00003781= 0D 0A                    781                  dc.b    $0D,$0A
-00003783= 2A 2A 2A 2A 2A 2A ...    782                  dc.b    '************************************************************'
-000037BF= 0D 0A 00                 783                  dc.b    $0D,$0A,0
-000037C2= 46 65 65 64 20 6C ...    784  potion_msg:     dc.b    'Feed load (each horse needs at least 100 units of feed)'
-000037F9= 0D 0A                    785                  dc.b    $0D,$0A
-000037FB= 45 6E 74 65 72 20 ...    786                  dc.b    'Enter feed load : ',0
-0000380E= 4E 75 6D 62 65 72 ...    787  potions_msg:    dc.b    'Number of potions : ',0
-00003823= 45 61 63 68 20 71 ...    788  weapons_msg:    dc.b    'Each quest need at least 2 Weapons'
-00003845= 0D 0A                    789                  dc.b    $0D,$0A
-00003847= 6D 69 6E 69 6D 75 ...    790                  dc.b    'minimum requirement is 2 i.e. Sword x 1 and Speer x 1.'
-0000387D= 0D 0A                    791                  dc.b    $0D,$0A
-0000387F= 45 6E 74 65 72 20 ...    792                  dc.b    'Enter # of weapons : ',0
-00003895= 41 64 64 20 47 61 ...    793  gameplay_msg:   dc.b    'Add Gameplay !',0
-000038A4= 55 70 64 61 74 65 ...    794  update_msg:     dc.b    'Update Gameplay !',0
-000038B6= 44 72 61 77 20 53 ...    795  draw_msg:       dc.b    'Draw Screen !',0
-000038C4= 53 74 72 69 6B 65 ...    796  hit_msg:        dc.b    'Strike!',0
-000038CC= 4D 69 73 73 21 00        797  miss_msg:       dc.b    'Miss!',0
-000038D2= 2E 00                    798  loop_msg:       dc.b    '.',0
-000038D4= 45 6E 74 65 72 20 ...    799  replay_msg:     dc.b    'Enter 0 to Quit any other number to replay : ',0
-00003902= 53 63 6F 72 65 20 ...    800  hud_msg:        dc.b    'Score : ',0
-0000390B                           801  
-0000390C                           802  health:     ds.w    1
-0000390E                           803  score:      ds.w    1 reserve space for score
-00003910                           804  
-00003910= 59 6F 75 20 61 77 ...    805  wake_up_msg:    dc.b    'You awake in a room, on a bed of red velvet, with no memory',$0D,$0A
-0000394D= 6F 66 20 68 6F 77 ...    806                  dc.b    'of how you got here. You climb from the frame and look in a nearby mirror',$0D,$0A,0
-00003999= 31 3E 20 59 6F 75 ...    807  pick_role_msg:  dc.b    '1> You wear armour of polished iron, a short sword and heavy shield laying',$0D,$0A
-000039E5= 63 6C 6F 73 65 20 ...    808                  dc.b    'close by. (Knight class)',$0D,$0A,$0D,$0A
-00003A01= 32 3E 20 59 6F 75 ...    809                  dc.b    '2> You wear a cloak with mystic symbols sewn into the fabrics, an ancient',$0D,$0A
-00003A4C= 6C 6F 6F 6B 69 6E ...    810                  dc.b    'looking staff lays near. (Mage class)',$0D,$0A,$0D,$0A
-00003A75= 33 3E 20 59 6F 75 ...    811                  dc.b    '3> You wear tight, well-fitting leather armour with reminents of black dye',$0D,$0A
-00003AC1= 73 74 61 69 6E 65 ...    812                  dc.b    'stained to the material. Two knives are fastened to your belt. (Rogue class)',$0D,$0A,0
-00003B10= 45 6E 74 65 72 20 ...    813  input_nums_msg:  dc.b    'Enter num between 1 and ',0
-00003B29= 3A 20 00                 814  colon_msg:       dc.b    ': ',0
-00003B2C                           815  
-00003B2C= 49 6E 70 75 74 74 ...    816  input_error_msg: dc.b    'Inputted number is outside of range.',$0D,$0A,0
-00003B53= 47 61 6D 65 73 74 ...    817  fake_gamestate_msg: dc.b    'Gamestate doesnt exist',$0D,$0A,0
-00003B6C= 59 6F 75 20 70 69 ...    818  knight_role_msg: dc.b    'You pick up your sword, grab a torch from the wall, and leave the room.',$0D,$0A
-00003BB5= 2D 20 59 6F 75 20 ...    819                  dc.b    '- You have chosen the KNIGHT class. You specialise in slow, strong attacks.',$0D,$0A,0
-00003C03= 59 6F 75 20 70 69 ...    820  mage_role_msg:   dc.b    'You pick up your staff, grab a torch from the wall, and leave the room.',$0D,$0A
-00003C4C= 2D 20 59 6F 75 20 ...    821                  dc.b    '- You have chosen the MAGE class. You specialise in ranged magic attacks.',$0D,$0A,0
-00003C98= 59 6F 75 20 66 61 ...    822  rogue_role_msg:  dc.b    'You fasten your belt, grab a torch from the wall, and leave the room.',$0D,$0A
-00003CDF= 2D 20 59 6F 75 20 ...    823                  dc.b    '- You have chosen the ROGUE class. You specialise in fast, weak attacks.',$0D,$0A,0
-00003D2A= 31 3E 20 4D 6F 76 ...    824  movement_msg:    dc.b    '1> Move north.',$0D,$0A
-00003D3A= 32 3E 20 4D 6F 76 ...    825                  dc.b    '2> Move south.',$0D,$0A
-00003D4A= 33 3E 20 4D 6F 76 ...    826                  dc.b    '3> Move west.',$0D,$0A
-00003D59= 34 3E 20 4D 6F 76 ...    827                  dc.b    '4> Move east.',$0D,$0A,0
-00003D69= 4D 6F 76 65 64 20 ...    828  move_north_msg:  dc.b    'Moved north.',$0D,$0A,0
-00003D78= 4D 6F 76 65 64 20 ...    829  move_east_msg:   dc.b    'Moved east.',$0D,$0A,0
-00003D86= 4D 6F 76 65 64 20 ...    830  move_south_msg:  dc.b    'Moved south.',$0D,$0A,0
-00003D95= 4D 6F 76 65 64 20 ...    831  move_west_msg:   dc.b    'Moved west.',$0D,$0A,0
-00003DA3= 41 20 77 61 6C 6C ...    832  movement_blocked_msg:  dc.b    'A wall blocks your path.',$0D,$0A,0
-00003DBE= 45 6E 74 65 72 20 ...    833  continue_msg:    dc.b    'Enter any key to continue... ',0
-00003DDC                           834  
-00003DDC= 20 20 20 00              835  blank_tile      dc.b    '   ',0
-00003DE0= 7C 20 7C 00              836  both_tile       dc.b    '| |',0
-00003DE4= 7C 20 20 00              837  left_tile       dc.b    '|  ',0
-00003DE8= 20 20 7C 00              838  right_tile      dc.b    '  |',0
-00003DEC= 5C 2F 5C 00              839  blocked_tile    dc.b    '\/\',0
-00003DF0= 2A 00                    840  player_mark     dc.b    '*',0
-00003DF2                           841  
-00003DF2                           842      end start
+00003356  524E                     482      add     #1,A6                   Move the player east
+00003358                           483      
+00003358  4E75                     484      rts
+0000335A                           485  
+0000335A                           486  movement_blocked:
+0000335A  43F9 00003E15            487      lea     movement_blocked_msg,A1 Load the message
+00003360  103C 000E                488      move.b  #14,D0                  Move the trap command to display a message
+00003364  4E4F                     489      trap    #15                     Display the movement blocked message
+00003366  6100 002A                490      bsr     press_continue          Pause the game until a key is pressed
+0000336A                           491      
+0000336A  4E75                     492      rts                             Return from the subroutine
+0000336C                           493      
+0000336C                           494  *-------------------------------------------------------
+0000336C                           495  *---------------------Manage Combat---------------------
+0000336C                           496  *-------------------------------------------------------
+0000336C                           497  combat:
+0000336C  43F9 00003EE7            498      lea     skeleton_msg,A1 Load the skeleton message
+00003372  103C 000E                499      move.b  #14,D0          Move literal 14 for display message trap command
+00003376  4E4F                     500      trap    #15             Display the loaded message
+00003378                           501      
+00003378  6100 FE9E                502      bsr endl                Break to a new line
+0000337C                           503  
+0000337C  43F9 00003E9E            504      lea     combat_msg,A1   Load the combat message
+00003382  103C 000E                505      move.b  #14,D0          Move literal 14 for display message trap command
+00003386  4E4F                     506      trap    #15             Display the loaded message
+00003388                           507  
+00003388  1A3C 0004                508      move.b  #4,D5           Move the number 4 to D5 to tell the program how many options there are
+0000338C                           509      
+0000338C  6100 FD1A                510      bsr     input           branch to the input subroutine
+00003390  4E75                     511      rts
+00003392                           512      
+00003392                           513  
+00003392                           514  *-------------------------------------------------------
+00003392                           515  *-------------------Misc Subroutines--------------------
+00003392                           516  *-------------------------------------------------------
+00003392                           517  press_continue:
+00003392  6100 FE84                518      bsr     endl
+00003396                           519  
+00003396  43F9 00003E30            520      lea     continue_msg,A1     Load message into A1
+0000339C  103C 000E                521      move.b  #14,D0              Move the trap command to display a message
+000033A0  4E4F                     522      trap    #15                 display the "press any ket to continue" text
+000033A2                           523      
+000033A2  103C 0004                524      move.b  #4,D0               Move the trap command to take input
+000033A6  4E4F                     525      trap    #15                 take input to freeze the game
+000033A8  4E75                     526      rts                         Return from the 'press continue' subroutine
+000033AA                           527      
+000033AA                           528  *-------------------------------------------------------
+000033AA                           529  *----------------------Draw loop------------------------
+000033AA                           530  *-------------------------------------------------------
+000033AA                           531  draw_loop:
+000033AA  45F8 5000                532      lea     $5000,A2        Load starting memory location into A7
+000033AE  1C3C 0000                533      move.b  #0,D6           Data register used for rows
+000033B2  1E3C 0000                534      move.b  #0,D7           Data register used for columns
+000033B6  7200                     535      move.l  #0,D1           Clear the D1 data register
+000033B8                           536      
+000033B8  6100 0004                537      bsr     loop_rows       Loop for every row
+000033BC  4E75                     538      rts
+000033BE                           539      
+000033BE                           540  loop_rows:
+000033BE  BC7C 0016                541      CMP     #22,D6          Check the rows don't go out of bounds
+000033C2  6E00 002C                542      BGT     end_loop        If the rows are greater than 22 end the loop
+000033C6                           543      
+000033C6  1E3C 0000                544      move.b  #0,D7           Reset to column 0
+000033CA  6100 000A                545      bsr     loop_columns    Loop for every column
+000033CE                           546      
+000033CE  5206                     547      add.b   #1,D6           Add to the rows
+000033D0                           548      
+000033D0  6100 FE46                549      bsr     endl            Break to the next line
+000033D4  60E8                     550      bra     loop_rows       Loop through the rows again
+000033D6                           551      
+000033D6                           552  loop_columns:
+000033D6  BE3C 000F                553      CMP.B   #15,D7              Check the rows don't go out of bounds
+000033DA  6E00 0014                554      BGT     end_loop            If the rows are greater than 22 end the loop
+000033DE                           555      
+000033DE  6100 0012                556      bsr     draw_tile           Draw the current tile
+000033E2  6100 00B8                557      bsr     check_for_player    Draw the player in the current tile if they're there
+000033E6  6100 0108                558      bsr     check_for_enemy
+000033EA                           559      
+000033EA  5207                     560      add.b   #1,D7               Add to the column count
+000033EC  524A                     561      add     #1,A2               Move to the next memory location
+000033EE  60E6                     562      bra     loop_columns        Loop the columns again
+000033F0                           563  
+000033F0                           564  end_loop:
+000033F0  4E75                     565      rts                         Return once a loop is finished
+000033F2                           566      
+000033F2                           567  *-------------------------------------------------------
+000033F2                           568  *----------------------Draw tile------------------------
+000033F2                           569  *-------------------------------------------------------
+000033F2                           570  *Draws the tile at the address in the address register A2
+000033F2                           571  draw_tile:
+000033F2  0C12 00FF                572      CMP.B   #255,(A2)           Check if the value is undifined
+000033F6  6700 005E                573      BEQ     draw_blocked_tile   Draw the blank tile
+000033FA                           574      
+000033FA  0C12 0001                575      CMP.B   #1,(A2)
+000033FE  6700 0064                576      BEQ     draw_both_tile
+00003402  0C12 0003                577      CMP.B   #3,(A2)
+00003406  6700 006A                578      BEQ     draw_left_tile
+0000340A  0C12 0004                579      CMP.B   #4,(A2)
+0000340E  6700 0062                580      BEQ     draw_left_tile
+00003412  0C12 0005                581      CMP.B   #5,(A2)
+00003416  6700 0068                582      BEQ     draw_right_tile
+0000341A  0C12 0006                583      CMP.B   #6,(A2)
+0000341E  6700 0060                584      BEQ     draw_right_tile
+00003422  0C12 0008                585      CMP.B   #8,(A2)
+00003426  6700 004A                586      BEQ     draw_left_tile
+0000342A  0C12 000A                587      CMP.B   #10,(A2)
+0000342E  6700 0050                588      BEQ     draw_right_tile
+00003432  0C12 000B                589      CMP.B   #11,(A2)
+00003436  6700 003A                590      BEQ     draw_left_tile
+0000343A  0C12 000C                591      CMP.B   #12,(A2)
+0000343E  6700 0024                592      BEQ     draw_both_tile
+00003442  0C12 000D                593      CMP.B   #13,(A2)
+00003446  6700 0038                594      BEQ     draw_right_tile
+0000344A  0C12 000E                595      CMP.B   #14,(A2)
+0000344E  6700 0014                596      BEQ     draw_both_tile
+00003452                           597      
+00003452  6000 003A                598      BRA     draw_blank_tile     Draw the blank tile
+00003456                           599      
+00003456                           600  draw_blocked_tile:
+00003456  43F9 00003E5E            601      lea     blocked_tile,A1
+0000345C  103C 000E                602      move.b  #14,D0
+00003460  4E4F                     603      trap    #15
+00003462  4E75                     604      rts
+00003464                           605      
+00003464                           606  draw_both_tile:
+00003464  43F9 00003E52            607      lea     both_tile,A1
+0000346A  103C 000E                608      move.b  #14,D0
+0000346E  4E4F                     609      trap    #15
+00003470  4E75                     610      rts
+00003472                           611      
+00003472                           612  draw_left_tile:
+00003472  43F9 00003E56            613      lea     left_tile,A1
+00003478  103C 000E                614      move.b  #14,D0
+0000347C  4E4F                     615      trap    #15
+0000347E  4E75                     616      rts
+00003480                           617      
+00003480                           618  draw_right_tile:
+00003480  43F9 00003E5A            619      lea     right_tile,A1
+00003486  103C 000E                620      move.b  #14,D0
+0000348A  4E4F                     621      trap    #15
+0000348C  4E75                     622      rts
+0000348E                           623      
+0000348E                           624  draw_blank_tile:
+0000348E  43F9 00003E4E            625      lea     blank_tile,A1
+00003494  103C 000E                626      move.b  #14,D0
+00003498  4E4F                     627      trap    #15
+0000349A  4E75                     628      rts
+0000349C                           629      
+0000349C                           630  check_for_player:
+0000349C  B4CE                     631      CMP.W   A6,A2
+0000349E  6700 0004                632      BEQ     draw_player
+000034A2  4E75                     633      rts
+000034A4                           634      
+000034A4                           635  draw_player:
+000034A4  323C 00FF                636      move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+000034A8  103C 000B                637      move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+000034AC  4E4F                     638      trap    #15             Trap to get the cursor position in D1
+000034AE                           639      
+000034AE  0441 0200                640      sub.w   #512,D1         Move the cursor back by two columns
+000034B2  4E4F                     641      trap    #15             Set the cursor position with trap command 11
+000034B4                           642      
+000034B4  2601                     643      move.l  D1,D3          Move the value in D1 to D3 for storage
+000034B6                           644      
+000034B6  103C 0015                645      move.b  #21,D0          Move #21 to D0 for trap command 21
+000034BA  223C 0000FF00            646      move.l  #GREEN,D1       Move the colour green to D1
+000034C0  243C 01090000            647      move.l  #FONT,D2        Move the font to D2
+000034C6  4E4F                     648      trap    #15             Set the colour
+000034C8                           649      
+000034C8  43F9 00003E62            650      lea     player_mark,A1      load the player symbol
+000034CE  103C 000E                651      move.b  #14,D0              Move #14 to D0 for trap command 14
+000034D2  4E4F                     652      trap    #15                 Draw the player mark
+000034D4                           653      
+000034D4  103C 0015                654      move.b  #21,D0          Move #21 to D0 for trap command 21
+000034D8  223C 00FFFFFF            655      move.l  #WHITE,D1       Move the colour green to D1
+000034DE  4E4F                     656      trap    #15             Set the colour
+000034E0  4241                     657      clr     D1
+000034E2                           658      
+000034E2  2203                     659      move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
+000034E4                           660      
+000034E4  0641 0200                661      add.w   #512,D1         Move the cursor position two columns forward
+000034E8  103C 000B                662      move.b  #11,D0          Move byte #11 for trap command 11 
+000034EC  4E4F                     663      trap    #15             Set the cursor position
+000034EE                           664      
+000034EE  4E75                     665      rts
+000034F0                           666      
+000034F0                           667  check_for_enemy:
+000034F0  3238 6004                668      move.w  $6004,D1
+000034F4  3041                     669      move.w  D1,A0
+000034F6  B4C8                     670      CMP.W   A0,A2
+000034F8  6700 0004                671      BEQ     draw_enemy
+000034FC  4E75                     672      rts
+000034FE                           673      
+000034FE                           674  draw_enemy:
+000034FE  323C 00FF                675      move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+00003502  103C 000B                676      move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+00003506  4E4F                     677      trap    #15             Trap to get the cursor position in D1
+00003508                           678      
+00003508  0441 0200                679      sub.w   #512,D1         Move the cursor back by two columns
+0000350C  4E4F                     680      trap    #15             Set the cursor position with trap command 11
+0000350E                           681      
+0000350E  2601                     682      move.l  D1,D3          Move the value in D1 to D3 for storage
+00003510                           683      
+00003510  103C 0015                684      move.b  #21,D0          Move #21 to D0 for trap command 21
+00003514  223C 000000FF            685      move.l  #RED,D1       Move the colour green to D1
+0000351A  243C 01090000            686      move.l  #FONT,D2        Move the font to D2
+00003520  4E4F                     687      trap    #15             Set the colour
+00003522                           688      
+00003522  43F9 00003E64            689      lea     enemy_mark,A1      load the player symbol
+00003528  103C 000E                690      move.b  #14,D0              Move #14 to D0 for trap command 14
+0000352C  4E4F                     691      trap    #15                 Draw the player mark
+0000352E                           692      
+0000352E  103C 0015                693      move.b  #21,D0          Move #21 to D0 for trap command 21
+00003532  223C 00FFFFFF            694      move.l  #WHITE,D1       Move the colour green to D1
+00003538  4E4F                     695      trap    #15             Set the colour
+0000353A  4241                     696      clr     D1
+0000353C                           697      
+0000353C  2203                     698      move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
+0000353E                           699      
+0000353E  0641 0200                700      add.w   #512,D1         Move the cursor position two columns forward
+00003542  103C 000B                701      move.b  #11,D0          Move byte #11 for trap command 11 
+00003546  4E4F                     702      trap    #15             Set the cursor position
+00003548                           703      
+00003548  4E75                     704      rts
+0000354A                           705      
+0000354A                           706  *-------------------------------------------------------
+0000354A                           707  *-------------------Setup the world---------------------
+0000354A                           708  *-------------------------------------------------------
+0000354A                           709  setup_world:
+0000354A  11FC 000E 514A           710      move.b  #14,$514A   Setup the starting corridor
+00003550  11FC 0007 513A           711      move.b  #7,$513A    T junction upwards from starting corridor
+00003556  11FC 0004 5139           712      move.b  #4,$5139    Left corridor
+0000355C  11FC 0001 5129           713      move.b  #1,$5129
+00003562  11FC 0001 5119           714      move.b  #1,$5119
+00003568                           715      
+00003568  11FC 0004 5108           716      move.b  #4,$5108    First shop
+0000356E  11FC 0000 5109           717      move.b  #0,$5109    Entrance
+00003574  11FC 0005 510A           718      move.b  #5,$510A
+0000357A  11FC 0008 50F8           719      move.b  #8,$50F8
+00003580  11FC 0000 50F9           720      move.b  #0,$50F9
+00003586  11FC 000A 50FA           721      move.b  #10,$50FA
+0000358C  11FC 0003 50E8           722      move.b  #3,$50E8
+00003592  11FC 0007 50E9           723      move.b  #7,$50E9
+00003598  11FC 0006 50EA           724      move.b  #6,$50EA
+0000359E                           725      
+0000359E  11FC 0005 513B           726      move.b  #5,$513B    Right corridor
+000035A4  11FC 0001 512B           727      move.b  #1,$512B
+000035AA  11FC 0001 511B           728      move.b  #1,$511B
+000035B0  11FC 0008 510B           729      move.b  #8,$510B    Path continues up with a turn off to the right
+000035B6                           730      
+000035B6  11FC 0002 510C           731      move.b  #2,$510C    Right path
+000035BC  11FC 0002 510D           732      move.b  #2,$510D    Continue right
+000035C2  11FC 0005 510E           733      move.b  #5,$510E    Path upwards and to the left
+000035C8  11FC 0001 50FE           734      move.b  #1,$50FE    Leads upwards into a room
+000035CE                           735      
+000035CE  11FC 0004 50ED           736      move.b  #4,$50ED    First monster room
+000035D4  11FC 0000 50EE           737      move.b  #0,$50EE    Entrance
+000035DA  11FC 0005 50EF           738      move.b  #5,$50EF
+000035E0  11FC 0008 50DD           739      move.b  #8,$50DD
+000035E6  11FC 0000 50DE           740      move.b  #0,$50DE
+000035EC  11FC 000A 50DF           741      move.b  #10,$50DF
+000035F2  11FC 0003 50CD           742      move.b  #3,$50CD
+000035F8  11FC 0007 50CE           743      move.b  #7,$50CE
+000035FE  11FC 0006 50CF           744      move.b  #6,$50CF
+00003604                           745      
+00003604  11FC 0001 50FB           746      move.b  #1,$50FB    Path that continues up
+0000360A  11FC 0001 50EB           747      move.b  #1,$50EB    Path continues upwards
+00003610  11FC 0001 50DB           748      move.b  #1,$50DB
+00003616                           749      
+00003616                           750      *Bottom row of room
+00003616  11FC 0004 50C8           751      move.b  #4,$50C8    Large monster room with locked door
+0000361C  11FC 0009 50C9           752      move.b  #9,$50C9
+00003622  11FC 0009 50CA           753      move.b  #9,$50CA
+00003628  11FC 0000 50CB           754      move.b  #0,$50CB    Entrance
+0000362E  11FC 0005 50CC           755      move.b  #5,$50CC
+00003634                           756      *Middle row of room
+00003634  11FC 0000 50B8           757      move.b  #0,$50B8    Exit to the left
+0000363A  11FC 0000 50B9           758      move.b  #0,$50B9
+00003640  11FC 0000 50BA           759      move.b  #0,$50BA
+00003646  11FC 0000 50BB           760      move.b  #0,$50BB
+0000364C  11FC 000A 50BC           761      move.b  #10,$50BC
+00003652                           762      *Top row of room
+00003652  11FC 0003 50A8           763      move.b  #3,$50A8
+00003658  11FC 0007 50A9           764      move.b  #7,$50A9
+0000365E  11FC 0007 50AA           765      move.b  #7,$50AA
+00003664  11FC 0007 50AB           766      move.b  #7,$50AB    Locked door
+0000366A  11FC 0006 50AC           767      move.b  #6,$50AC
+00003670                           768      
+00003670  11FC 0002 50B7           769      move.b  #2,$50B7    Exit large room leftwards
+00003676  11FC 0002 50B6           770      move.b  #2,$50B6    Continue to the left
+0000367C  11FC 0007 50B5           771      move.b  #7,$50B5    Continue to the left and a path downwards
+00003682  11FC 0002 50B4           772      move.b  #2,$50B4    Continue to the left
+00003688                           773      
+00003688  11FC 0003 50A1           774      move.b  #3,$50A1    Room to the left
+0000368E  11FC 0007 50A2           775      move.b  #7,$50A2
+00003694  11FC 0006 50A3           776      move.b  #6,$50A3
+0000369A  11FC 0008 50B1           777      move.b  #8,$50B1
+000036A0  11FC 0000 50B2           778      move.b  #0,$50B2
+000036A6  11FC 0000 50B3           779      move.b  #0,$50B3    Entrance to the right
+000036AC  11FC 0004 50C1           780      move.b  #4,$50C1
+000036B2  11FC 0009 50C2           781      move.b  #9,$50C2
+000036B8  11FC 0005 50C3           782      move.b  #5,$50C3
+000036BE                           783      
+000036BE  11FC 0001 50C5           784      move.b  #1,$50C5    Path leading downwards
+000036C4  11FC 0001 50D5           785      move.b  #1,$50D5
+000036CA  11FC 000A 50E5           786      move.b  #10,$50E5   Path leading downward and to the left
+000036D0  11FC 0002 50E4           787      move.b  #2,$50E4    Path on the left
+000036D6  11FC 0002 50E3           788      move.b  #2,$50E3
+000036DC  11FC 0003 50E2           789      move.b  #3,$50E2    Path takes a turn downwards
+000036E2  11FC 0001 50F2           790      move.b  #1,$50F2    Path continues downwards
+000036E8                           791      
+000036E8  11FC 0003 5101           792      move.b  #3,$5101    Regular enemy room
+000036EE  11FC 0000 5102           793      move.b  #0,$5102    Entrance
+000036F4  11FC 0006 5103           794      move.b  #6,$5103
+000036FA  11FC 0008 5111           795      move.b  #8,$5111
+00003700  11FC 0000 5112           796      move.b  #0,$5112
+00003706  11FC 000A 5113           797      move.b  #10,$5113
+0000370C  11FC 0004 5121           798      move.b  #4,$5121
+00003712  11FC 0009 5122           799      move.b  #9,$5122
+00003718  11FC 000A 5123           800      move.b  #10,$5123   Exit at the bottom
+0000371E                           801      
+0000371E  11FC 0001 50F5           802      move.b  #1,$50F5    Path leading downward
+00003724  11FC 0001 5105           803      move.b  #1,$5105
+0000372A  11FC 0001 5115           804      move.b  #1,$5115
+00003730  11FC 0001 5125           805      move.b  #1,$5125
+00003736                           806      
+00003736                           807      *Top row of room
+00003736  11FC 0008 5133           808      move.b  #8,$5133    Large enemy room - Exit at top
+0000373C  11FC 0007 5134           809      move.b  #7,$5134
+00003742  11FC 0000 5135           810      move.b  #0,$5135    Entrance
+00003748  11FC 0006 5136           811      move.b  #6,$5136
+0000374E                           812      
+0000374E                           813      *Middle row of room
+0000374E  11FC 0008 5143           814      move.b  #8,$5143
+00003754  11FC 0000 5144           815      move.b  #0,$5144
+0000375A  11FC 0000 5145           816      move.b  #0,$5145
+00003760  11FC 000A 5146           817      move.b  #10,$5146
+00003766                           818      
+00003766                           819      *Bottom row of room
+00003766  11FC 0004 5153           820      move.b  #4,$5153
+0000376C  11FC 0009 5154           821      move.b  #9,$5154
+00003772  11FC 0009 5155           822      move.b  #9,$5155
+00003778  11FC 0005 5156           823      move.b  #5,$5156
+0000377E                           824      
+0000377E  4E75                     825      rts
+00003780                           826  
+00003780                           827  setup_enemies:
+00003780  11FC 0005 6000           828      move.b  #5,$6000    Health - Setup the first enemy
+00003786  11FC 0001 6001           829      move.b  #1,$6001    Damage/level
+0000378C  11FC 0001 6002           830      move.b  #1,$6002    Class type (Knight)
+00003792  31FC 50EE 6004           831      move.w  #$50EE,$6004  Move enemy coordinates
+00003798                           832      
+00003798  4E75                     833      rts
+0000379A                           834      
+0000379A                           835      
+0000379A                           836  *-------------------------------------------------------
+0000379A                           837  *-------------------Data Delarations--------------------
+0000379A                           838  *-------------------------------------------------------
+0000379A                           839  
+0000379A= 0D 0A 00                 840  crlf:           dc.b    $0D,$0A,0
+0000379D= 2A 2A 2A 2A 2A 2A ...    841  welcome_msg:    dc.b    '************************************************************'
+000037D9= 0D 0A                    842                  dc.b    $0D,$0A
+000037DB= 41 76 61 6C 6F 6E ...    843                  dc.b    'Avalon: The Legend Lives'
+000037F3= 0D 0A                    844                  dc.b    $0D,$0A
+000037F5= 2A 2A 2A 2A 2A 2A ...    845                  dc.b    '************************************************************'
+00003831= 0D 0A 00                 846                  dc.b    $0D,$0A,0
+00003834= 46 65 65 64 20 6C ...    847  potion_msg:     dc.b    'Feed load (each horse needs at least 100 units of feed)'
+0000386B= 0D 0A                    848                  dc.b    $0D,$0A
+0000386D= 45 6E 74 65 72 20 ...    849                  dc.b    'Enter feed load : ',0
+00003880= 4E 75 6D 62 65 72 ...    850  potions_msg:    dc.b    'Number of potions : ',0
+00003895= 45 61 63 68 20 71 ...    851  weapons_msg:    dc.b    'Each quest need at least 2 Weapons'
+000038B7= 0D 0A                    852                  dc.b    $0D,$0A
+000038B9= 6D 69 6E 69 6D 75 ...    853                  dc.b    'minimum requirement is 2 i.e. Sword x 1 and Speer x 1.'
+000038EF= 0D 0A                    854                  dc.b    $0D,$0A
+000038F1= 45 6E 74 65 72 20 ...    855                  dc.b    'Enter # of weapons : ',0
+00003907= 41 64 64 20 47 61 ...    856  gameplay_msg:   dc.b    'Add Gameplay !',0
+00003916= 55 70 64 61 74 65 ...    857  update_msg:     dc.b    'Update Gameplay !',0
+00003928= 44 72 61 77 20 53 ...    858  draw_msg:       dc.b    'Draw Screen !',0
+00003936= 53 74 72 69 6B 65 ...    859  hit_msg:        dc.b    'Strike!',0
+0000393E= 4D 69 73 73 21 00        860  miss_msg:       dc.b    'Miss!',0
+00003944= 2E 00                    861  loop_msg:       dc.b    '.',0
+00003946= 45 6E 74 65 72 20 ...    862  replay_msg:     dc.b    'Enter 0 to Quit any other number to replay : ',0
+00003974= 53 63 6F 72 65 20 ...    863  hud_msg:        dc.b    'Score : ',0
+0000397D                           864  
+0000397E                           865  health:     ds.w    1
+00003980                           866  score:      ds.w    1 reserve space for score
+00003982                           867  
+00003982= 59 6F 75 20 61 77 ...    868  wake_up_msg:    dc.b    'You awake in a room, on a bed of red velvet, with no memory',$0D,$0A
+000039BF= 6F 66 20 68 6F 77 ...    869                  dc.b    'of how you got here. You climb from the frame and look in a nearby mirror',$0D,$0A,0
+00003A0B= 31 3E 20 59 6F 75 ...    870  pick_role_msg:  dc.b    '1> You wear armour of polished iron, a short sword and heavy shield laying',$0D,$0A
+00003A57= 63 6C 6F 73 65 20 ...    871                  dc.b    'close by. (Knight class)',$0D,$0A,$0D,$0A
+00003A73= 32 3E 20 59 6F 75 ...    872                  dc.b    '2> You wear a cloak with mystic symbols sewn into the fabrics, an ancient',$0D,$0A
+00003ABE= 6C 6F 6F 6B 69 6E ...    873                  dc.b    'looking staff lays near. (Mage class)',$0D,$0A,$0D,$0A
+00003AE7= 33 3E 20 59 6F 75 ...    874                  dc.b    '3> You wear tight, well-fitting leather armour with reminents of black dye',$0D,$0A
+00003B33= 73 74 61 69 6E 65 ...    875                  dc.b    'stained to the material. Two knives are fastened to your belt. (Rogue class)',$0D,$0A,0
+00003B82= 45 6E 74 65 72 20 ...    876  input_nums_msg:  dc.b    'Enter num between 1 and ',0
+00003B9B= 3A 20 00                 877  colon_msg:       dc.b    ': ',0
+00003B9E                           878  
+00003B9E= 49 6E 70 75 74 74 ...    879  input_error_msg: dc.b    'Inputted number is outside of range.',$0D,$0A,0
+00003BC5= 47 61 6D 65 73 74 ...    880  fake_gamestate_msg: dc.b    'Gamestate doesnt exist',$0D,$0A,0
+00003BDE= 59 6F 75 20 70 69 ...    881  knight_role_msg: dc.b    'You pick up your sword, grab a torch from the wall, and leave the room.',$0D,$0A
+00003C27= 2D 20 59 6F 75 20 ...    882                  dc.b    '- You have chosen the KNIGHT class. You specialise in slow, strong attacks.',$0D,$0A,0
+00003C75= 59 6F 75 20 70 69 ...    883  mage_role_msg:   dc.b    'You pick up your staff, grab a torch from the wall, and leave the room.',$0D,$0A
+00003CBE= 2D 20 59 6F 75 20 ...    884                  dc.b    '- You have chosen the MAGE class. You specialise in ranged magic attacks.',$0D,$0A,0
+00003D0A= 59 6F 75 20 66 61 ...    885  rogue_role_msg:  dc.b    'You fasten your belt, grab a torch from the wall, and leave the room.',$0D,$0A
+00003D51= 2D 20 59 6F 75 20 ...    886                  dc.b    '- You have chosen the ROGUE class. You specialise in fast, weak attacks.',$0D,$0A,0
+00003D9C= 31 3E 20 4D 6F 76 ...    887  movement_msg:    dc.b    '1> Move north.',$0D,$0A
+00003DAC= 32 3E 20 4D 6F 76 ...    888                  dc.b    '2> Move south.',$0D,$0A
+00003DBC= 33 3E 20 4D 6F 76 ...    889                  dc.b    '3> Move west.',$0D,$0A
+00003DCB= 34 3E 20 4D 6F 76 ...    890                  dc.b    '4> Move east.',$0D,$0A,0
+00003DDB= 4D 6F 76 65 64 20 ...    891  move_north_msg:  dc.b    'Moved north.',$0D,$0A,0
+00003DEA= 4D 6F 76 65 64 20 ...    892  move_east_msg:   dc.b    'Moved east.',$0D,$0A,0
+00003DF8= 4D 6F 76 65 64 20 ...    893  move_south_msg:  dc.b    'Moved south.',$0D,$0A,0
+00003E07= 4D 6F 76 65 64 20 ...    894  move_west_msg:   dc.b    'Moved west.',$0D,$0A,0
+00003E15= 41 20 77 61 6C 6C ...    895  movement_blocked_msg:  dc.b    'A wall blocks your path.',$0D,$0A,0
+00003E30= 45 6E 74 65 72 20 ...    896  continue_msg:    dc.b    'Enter any key to continue... ',0
+00003E4E                           897  
+00003E4E= 20 20 20 00              898  blank_tile      dc.b    '   ',0
+00003E52= 7C 20 7C 00              899  both_tile       dc.b    '| |',0
+00003E56= 7C 20 20 00              900  left_tile       dc.b    '|  ',0
+00003E5A= 20 20 7C 00              901  right_tile      dc.b    '  |',0
+00003E5E= 5C 2F 5C 00              902  blocked_tile    dc.b    '\/\',0
+00003E62= 2A 00                    903  player_mark     dc.b    '*',0
+00003E64= 58 00                    904  enemy_mark     dc.b    'X',0
+00003E66= 41 20 6D 6F 6E 73 ...    905  encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
+00003E9E= 31 3E 20 42 6C 6F ...    906  combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
+00003EB5= 32 3E 20 43 61 73 ...    907                  dc.b    '2> Cast Magic.',$0D,$0A
+00003EC5= 33 3E 20 41 74 74 ...    908                  dc.b    '3> Attack Swiftly.',$0D,$0A
+00003ED9= 34 3E 20 54 72 79 ...    909                  dc.b    '4> Try Run.',$0D,$0A,0
+00003EE7= 20 20 20 20 20 20 ...    910  skeleton_msg    dc.b    '           .-.',$0D,$0A
+00003EF7= 20 2F 5C 5F 5F 5F ...    911                  dc.b    ' /\____/\ (o.o)',$0D,$0A
+00003F08= 7C 20 20 5F 7C 7C ...    912                  dc.b    '|  _||_  | |=|',$0D,$0A
+00003F18= 20 5C 2F 20 7C 7C ...    913                  dc.b    ' \/ || \/ __|__',$0D,$0A
+00003F29= 20 20 20 20 7C 7C ...    914                  dc.b    '    ||\_//.=|=.\\',$0D,$0A
+00003F3C= 20 20 20 20 7C 7C ...    915                  dc.b    '    ||\_/ .=|=. \\',$0D,$0A
+00003F50= 20 20 20 20 7C 7C ...    916                  dc.b    '    ||    .=|=. //',$0D,$0A
+00003F64= 20 20 20 20 7C 7C ...    917                  dc.b    '    ||    (_=_)//',$0D,$0A
+00003F77= 20 20 20 20 7C 7C ...    918                  dc.b    '    ||   (:| |:)',$0D,$0A
+00003F89= 20 20 20 20 7C 7C ...    919                  dc.b    '    ||    || ||',$0D,$0A
+00003F9A= 20 20 20 20 7C 7C ...    920                  dc.b    '    ||    () ()',$0D,$0A
+00003FAB= 20 20 20 20 2F 5C ...    921                  dc.b    '    /\    || ||',$0D,$0A
+00003FBC= 20 20 20 20 7C 7C ...    922                  dc.b    '    ||    || ||',$0D,$0A
+00003FCD= 20 20 20 20 5C 2F ...    923                  dc.b    '    \/  ==   ==',$0D,$0A,0
+00003FDF                           924  
+00003FDF                           925      end start
 
 No errors detected
 No warnings generated
@@ -852,100 +935,107 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-BLANK_TILE          3DDC
-BLOCKED_TILE        3DEC
+BLANK_TILE          3E4E
+BLOCKED_TILE        3E5E
 BLUE                FF00
-BOTH_TILE           3DE0
-CHECK_FOR_ENEMY     3480
-CHECK_FOR_PLAYER    342C
-CLEAR_SCREEN        319C
-COLON_MSG           3B29
-CONTINUE_MSG        3DBE
-CRLF                3728
-DECORATE            317E
-DRAW                313C
-DRAW_BLANK_TILE     341E
-DRAW_BLOCKED_TILE   33E6
-DRAW_BOTH_TILE      33F4
-DRAW_ENEMY          348C
-DRAW_LEFT_TILE      3402
-DRAW_LOOP           333A
-DRAW_MSG            38B6
-DRAW_PLAYER         3434
-DRAW_RIGHT_TILE     3410
-DRAW_TILE           3382
+BOTH_TILE           3E52
+CHECK_FOR_ENEMY     34F0
+CHECK_FOR_PLAYER    349C
+CLEAR_SCREEN        31E6
+COLON_MSG           3B9B
+COMBAT              336C
+COMBAT_MSG          3E9E
+CONTINUE_MSG        3E30
+CRLF                379A
+DECORATE            31C8
+DRAW                317E
+DRAW_BLANK_TILE     348E
+DRAW_BLOCKED_TILE   3456
+DRAW_BOTH_TILE      3464
+DRAW_ENEMY          34FE
+DRAW_LEFT_TILE      3472
+DRAW_LOOP           33AA
+DRAW_MSG            3928
+DRAW_PLAYER         34A4
+DRAW_RIGHT_TILE     3480
+DRAW_TILE           33F2
+ENCOUNTER_MSG       3E66
 END                 3006
-ENDL                31CE
-END_LOOP            3380
+ENDL                3218
+END_LOOP            33F0
+ENEMY_CHECK         312E
+ENEMY_MARK          3E64
 ENEMY_MAX           1
+ENTER_COMBAT        315C
 EXIT                0
 FAKE_GAMESTATE      3104
-FAKE_GAMESTATE_MSG  3B53
+FAKE_GAMESTATE_MSG  3BC5
 FONT                1090000
 GAME                3000
 GAMELOOP            3112
-GAMEPLAY            3146
-GAMEPLAY_MSG        3895
+GAMEPLAY            3188
+GAMEPLAY_MSG        3907
 GREEN               FF00
-HEALTH              390C
-HIT_MSG             38C4
-HUD                 315C
-HUD_MSG             3902
+HEALTH              397E
+HIT_MSG             3936
+HUD                 31A6
+HUD_MSG             3974
 INPUT               30A8
-INPUT_ERROR_MSG     3B2C
-INPUT_NUMS_MSG      3B10
+INPUT_ERROR_MSG     3B9E
+INPUT_NUMS_MSG      3B82
 INVALID_INPUT       30F6
-KNIGHT_ROLE_MSG     3B6C
+KNIGHT_ROLE_MSG     3BDE
 KNIGHT_SELECT       3066
-LEFT_TILE           3DE4
-LOOP_COLUMNS        3366
-LOOP_MSG            38D2
-LOOP_ROWS           334E
+LEFT_TILE           3E56
+LOOP_COLUMNS        33D6
+LOOP_MSG            3944
+LOOP_ROWS           33BE
 LOSE_POINT          8
-MAGE_ROLE_MSG       3C03
+MAGE_ROLE_MSG       3C75
 MAGE_SELECT         307C
 MANAGE_INPUT        30D2
 MAX_POTIONS         9
 MIN_FEED            64
 MIN_POTIONS         1
 MIN_WEAPONS         6
-MISS_MSG            38CC
-MOVEMENT            31E4
-MOVEMENT_BLOCKED    3310
-MOVEMENT_BLOCKED_MSG  3DA3
-MOVEMENT_MSG        3D2A
-MOVE_EAST           32D4
-MOVE_EAST_MSG       3D78
-MOVE_NORTH          321C
-MOVE_NORTH_MSG      3D69
-MOVE_SOUTH          325A
-MOVE_SOUTH_MSG      3D86
-MOVE_WEST           3298
-MOVE_WEST_MSG       3D95
-OUT                 3186
+MISS_MSG            393E
+MOVEMENT            322E
+MOVEMENT_BLOCKED    335A
+MOVEMENT_BLOCKED_MSG  3E15
+MOVEMENT_MSG        3D9C
+MOVE_EAST           331E
+MOVE_EAST_MSG       3DEA
+MOVE_NORTH          3266
+MOVE_NORTH_MSG      3DDB
+MOVE_SOUTH          32A4
+MOVE_SOUTH_MSG      3DF8
+MOVE_WEST           32E2
+MOVE_WEST_MSG       3E07
+OUT                 31D0
 PICK_ROLE           3020
-PICK_ROLE_MSG       3999
-PLAYER_MARK         3DF0
-POTIONS_MSG         380E
-POTION_MSG          37C2
-PRESS_CONTINUE      3322
+PICK_ROLE_MSG       3A0B
+PLAYER_MARK         3E62
+POTIONS_MSG         3880
+POTION_MSG          3834
+PRESS_CONTINUE      3392
 RED                 FF
-REPLAY              31A8
-REPLAY_MSG          38D4
-RIGHT_TILE          3DE8
-ROGUE_ROLE_MSG      3C98
+REPLAY              31F2
+REPLAY_MSG          3946
+RIGHT_TILE          3E5A
+ROGUE_ROLE_MSG      3D0A
 ROGUE_SELECT        3092
 ROLE_INPUT          304A
-SCORE               390E
-SETUP_ENEMIES       370E
-SETUP_WORLD         34D8
+SCORE               3980
+SETUP_ENEMIES       3780
+SETUP_WORLD         354A
+SKELETON_MSG        3EE7
 START               1000
-UPDATE              313A
-UPDATE_MSG          38A4
-WAKE_UP_MSG         3910
-WALL_COLLISIONS     31FA
-WEAPONS_MSG         3823
+UPDATE              3124
+UPDATE_MSG          3916
+WAKE_UP_MSG         3982
+WALL_COLLISIONS     3244
+WEAPONS_MSG         3895
 WELCOME             300A
-WELCOME_MSG         372B
+WELCOME_MSG         379D
 WHITE               FFFFFF
 WIN_POINT           5

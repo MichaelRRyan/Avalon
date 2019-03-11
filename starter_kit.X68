@@ -214,28 +214,68 @@ fake_gamestate:
 *----------------Gameloop (main loop)-------------------
 *------------------------------------------------------- 
 gameloop:
-    bsr     update          branch to update game subroutine 
-    bsr     clear_screen    clears the screen         
+    bsr     clear_screen    clears the screen  
     bsr     draw            branch to draw screen subroutine
-    
+    bsr     update          branch to update game subroutine 
     bsr     gameplay        branch to gameplay subroutine
-   
     bra     gameloop        Continue looping the game loop     
     
-    bsr     clear_screen    clears the screen
-    bsr     hud             branch to display HUD subroutine
-    bsr     clear_screen    clears the screen
-    bsr     replay          branch to replay game subroutine
-    bsr     clear_screen    clears the screen
-    rts                     return from gameloop: subroutine
+    *bsr     clear_screen    clears the screen
+    *bsr     hud             branch to display HUD subroutine
+    *bsr     clear_screen    clears the screen
+    *bsr     replay          branch to replay game subroutine
+    *bsr     clear_screen    clears the screen
+    *rts                     return from gameloop: subroutine
 
 *-------------------------------------------------------
 *----------------Update Quest Progress------------------
 *  Complete Quest
 *------------------------------------------------------- 
 update:
-    *Add update code here
+    CMP.B   #5,(A4)         Check which state the game is in
+    BEQ     enemy_check     Check for enemies if in movement state
     rts
+    
+enemy_check:
+    move.w  $6004,D1    Move the enemy position to D1
+    move.w  A6,D2       Move the player position to D2
+    
+    *Check if the player is beside an enemy
+    sub.w   #16,D2          Check north
+    CMP.W   D1,D2           
+    BEQ     enter_combat    Enter the player into combat
+    
+    add.w   #32,D2          Check south
+    CMP.W   D1,D2           
+    BEQ     enter_combat    Enter the player into combat
+    
+    sub.w   #17,D2          Check west
+    CMP.W   D1,D2           
+    BEQ     enter_combat    Enter the player into combat
+    
+    add.w   #2,D2           Check east
+    CMP.W   D1,D2           
+    BEQ     enter_combat    Enter the player into combat
+    
+    rts     Return if not touching an enemy
+    
+enter_combat:
+    sub.w   #4,D1       Get the memory address of the enemy opposed to it's position
+    move.w  D1,A0       Move the enemy address to address register A0 to modify it
+    move.b  #6,(A4)     Move to combat state
+    
+    bsr     endl        Line break
+    
+    LEA     encounter_msg,A1    Load the encounter message int A1
+    move.b  #14,D0              Move #14 to D0 to display message
+    trap    #15                 Display the loaded message
+    
+    bsr     press_continue      Branch to the press to continue subroutine
+    
+    bsr     clear_screen        Clear the screen
+    
+    rts
+    
 *-------------------------------------------------------
 *-----------------Draw Quest Updates--------------------
 * Draw the game progress information, status regarding
@@ -255,6 +295,8 @@ gameplay:
     BEQ     pick_role   branch to the pick role subroutine
     CMP.B   #5,(A4)     Check which stage the game is in
     BEQ     movement    branch to the movement subroutine
+    CMP.B   #6,(A4)     Check which stage the game is in
+    BEQ     combat      branch to the combat subroutine
     rts                 Return from 'gameplay' subroutine
 
 *-------------------------------------------------------
@@ -328,7 +370,7 @@ movement:
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
 
-    move.b  #4,D5           Move the number 3 to D5 to tell the program how many options there are
+    move.b  #4,D5           Move the number 4 to D5 to tell the program how many options there are
     
     bsr     input           branch to the input subroutine
     rts
@@ -449,6 +491,26 @@ movement_blocked:
     
     rts                             Return from the subroutine
     
+*-------------------------------------------------------
+*---------------------Manage Combat---------------------
+*-------------------------------------------------------
+combat:
+    lea     skeleton_msg,A1 Load the skeleton message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    bsr endl                Break to a new line
+
+    lea     combat_msg,A1   Load the combat message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+
+    move.b  #4,D5           Move the number 4 to D5 to tell the program how many options there are
+    
+    bsr     input           branch to the input subroutine
+    rts
+    
+
 *-------------------------------------------------------
 *-------------------Misc Subroutines--------------------
 *-------------------------------------------------------
@@ -603,7 +665,8 @@ draw_player:
     rts
     
 check_for_enemy:
-    LEA     $6004,A0
+    move.w  $6004,D1
+    move.w  D1,A0
     CMP.W   A0,A2
     BEQ     draw_enemy
     rts
@@ -623,7 +686,7 @@ draw_enemy:
     move.l  #FONT,D2        Move the font to D2
     trap    #15             Set the colour
     
-    lea     player_mark,A1      load the player symbol
+    lea     enemy_mark,A1      load the player symbol
     move.b  #14,D0              Move #14 to D0 for trap command 14
     trap    #15                 Draw the player mark
     
@@ -765,7 +828,7 @@ setup_enemies:
     move.b  #5,$6000    Health - Setup the first enemy
     move.b  #1,$6001    Damage/level
     move.b  #1,$6002    Class type (Knight)
-    move.w  #$51,$6004  Move enemy coordinates
+    move.w  #$50EE,$6004  Move enemy coordinates
     
     rts
     
@@ -838,8 +901,29 @@ left_tile       dc.b    '|  ',0
 right_tile      dc.b    '  |',0
 blocked_tile    dc.b    '\/\',0
 player_mark     dc.b    '*',0
+enemy_mark     dc.b    'X',0
+encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
+combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
+                dc.b    '2> Cast Magic.',$0D,$0A
+                dc.b    '3> Attack Swiftly.',$0D,$0A
+                dc.b    '4> Try Run.',$0D,$0A,0
+skeleton_msg    dc.b    '           .-.',$0D,$0A
+                dc.b    ' /\____/\ (o.o)',$0D,$0A
+                dc.b    '|  _||_  | |=|',$0D,$0A
+                dc.b    ' \/ || \/ __|__',$0D,$0A
+                dc.b    '    ||\_//.=|=.\\',$0D,$0A
+                dc.b    '    ||\_/ .=|=. \\',$0D,$0A
+                dc.b    '    ||    .=|=. //',$0D,$0A
+                dc.b    '    ||    (_=_)//',$0D,$0A
+                dc.b    '    ||   (:| |:)',$0D,$0A
+                dc.b    '    ||    || ||',$0D,$0A
+                dc.b    '    ||    () ()',$0D,$0A
+                dc.b    '    /\    || ||',$0D,$0A
+                dc.b    '    ||    || ||',$0D,$0A
+                dc.b    '    \/  ==   ==',$0D,$0A,0
 
     end start
+
 
 
 
