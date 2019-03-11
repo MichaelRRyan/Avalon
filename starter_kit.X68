@@ -15,6 +15,21 @@
 *-------------------------------------------------------
 
 *-------------------------------------------------------
+*-------------------Game Information-------------------
+*-------------------------------------------------------
+*A6 is used for player coordinates
+*D5 is used occasionally for input range
+*$5000 to $6000 holds maps
+*$6000 to $7000 holds enemies
+*Enemy:
+*Byte   Name
+*0      Health
+*1      Damage/level
+*2      Enemy type (Knight, mage, rogue)
+*4      Coordinates
+
+
+*-------------------------------------------------------
 *Validation values to be used, modify as needed
 *Add additional validation values as required
 *-------------------------------------------------------
@@ -26,7 +41,14 @@ min_weapons EQU 6      min weapons
 win_point   EQU 5      points accumilated on win
 lose_point  EQU 8      points deducted on a loss
 
-mine_loc    EQU 100    example for a hit
+ENEMY_MAX   EQU 1      Number of enemies in the game
+
+RED         EQU $000000FF   Red colour value
+GREEN       EQU $0000FF00   Green colour value
+BLUE        EQU $0000FF00   Blue colour value
+WHITE       EQU $00FFFFFF   White colour value
+FONT        EQU $01090000   Font value
+
 
 
 *Start of Game
@@ -42,10 +64,8 @@ start:
     lea     $4020,A5   assign address A5 to that memory location
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
-    *A6 is used for player coordinates
-    *D5 is used occasionally for input range
-    
     bsr     setup_world
+    bsr     setup_enemies
 
     bsr     welcome    branch to the welcome subroutine
     bsr     press_continue
@@ -473,6 +493,7 @@ loop_columns:
     
     bsr     draw_tile           Draw the current tile
     bsr     check_for_player    Draw the player in the current tile if they're there
+    bsr     check_for_enemy
     
     add.b   #1,D7               Add to the column count
     add     #1,A2               Move to the next memory location
@@ -550,20 +571,72 @@ check_for_player:
     rts
     
 draw_player:
-    move.w  #255,D1
-    move.b  #11,D0
-    trap    #15
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
     
-    sub.w   #512,D1
-    trap    #15
+    sub.w   #512,D1         Move the cursor back by two columns
+    trap    #15             Set the cursor position with trap command 11
     
-    lea     player_mark,A1
-    move.b  #14,D0
-    trap    #15
+    move.l  D1,D3          Move the value in D1 to D3 for storage
     
-    add.w   #512,D1
-    move.b  #11,D0
-    trap    #15
+    move.b  #21,D0          Move #21 to D0 for trap command 21
+    move.l  #GREEN,D1       Move the colour green to D1
+    move.l  #FONT,D2        Move the font to D2
+    trap    #15             Set the colour
+    
+    lea     player_mark,A1      load the player symbol
+    move.b  #14,D0              Move #14 to D0 for trap command 14
+    trap    #15                 Draw the player mark
+    
+    move.b  #21,D0          Move #21 to D0 for trap command 21
+    move.l  #WHITE,D1       Move the colour green to D1
+    trap    #15             Set the colour
+    clr     D1
+    
+    move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
+    
+    add.w   #512,D1         Move the cursor position two columns forward
+    move.b  #11,D0          Move byte #11 for trap command 11 
+    trap    #15             Set the cursor position
+    
+    rts
+    
+check_for_enemy:
+    LEA     $6004,A0
+    CMP.W   A0,A2
+    BEQ     draw_enemy
+    rts
+    
+draw_enemy:
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
+    
+    sub.w   #512,D1         Move the cursor back by two columns
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  D1,D3          Move the value in D1 to D3 for storage
+    
+    move.b  #21,D0          Move #21 to D0 for trap command 21
+    move.l  #RED,D1       Move the colour green to D1
+    move.l  #FONT,D2        Move the font to D2
+    trap    #15             Set the colour
+    
+    lea     player_mark,A1      load the player symbol
+    move.b  #14,D0              Move #14 to D0 for trap command 14
+    trap    #15                 Draw the player mark
+    
+    move.b  #21,D0          Move #21 to D0 for trap command 21
+    move.l  #WHITE,D1       Move the colour green to D1
+    trap    #15             Set the colour
+    clr     D1
+    
+    move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
+    
+    add.w   #512,D1         Move the cursor position two columns forward
+    move.b  #11,D0          Move byte #11 for trap command 11 
+    trap    #15             Set the cursor position
     
     rts
     
@@ -688,7 +761,15 @@ setup_world:
     
     rts
 
-
+setup_enemies:
+    move.b  #5,$6000    Health - Setup the first enemy
+    move.b  #1,$6001    Damage/level
+    move.b  #1,$6002    Class type (Knight)
+    move.w  #$51,$6004  Move enemy coordinates
+    
+    rts
+    
+    
 *-------------------------------------------------------
 *-------------------Data Delarations--------------------
 *-------------------------------------------------------
@@ -723,7 +804,8 @@ score:      ds.w    1 reserve space for score
 
 wake_up_msg:    dc.b    'You awake in a room, on a bed of red velvet, with no memory',$0D,$0A
                 dc.b    'of how you got here. You climb from the frame and look in a nearby mirror',$0D,$0A,0
-pick_role_msg:  dc.b    '1> You wear armour of polished iron, a sword laying close by. (Knight class)',$0D,$0A,$0D,$0A
+pick_role_msg:  dc.b    '1> You wear armour of polished iron, a short sword and heavy shield laying',$0D,$0A
+                dc.b    'close by. (Knight class)',$0D,$0A,$0D,$0A
                 dc.b    '2> You wear a cloak with mystic symbols sewn into the fabrics, an ancient',$0D,$0A
                 dc.b    'looking staff lays near. (Mage class)',$0D,$0A,$0D,$0A
                 dc.b    '3> You wear tight, well-fitting leather armour with reminents of black dye',$0D,$0A
@@ -758,6 +840,7 @@ blocked_tile    dc.b    '\/\',0
 player_mark     dc.b    '*',0
 
     end start
+
 
 
 
