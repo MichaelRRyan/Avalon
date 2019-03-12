@@ -19,14 +19,28 @@
 *-------------------------------------------------------
 *A6 is used for player coordinates
 *D5 is used occasionally for input range
-*$5000 to $6000 holds maps
+*$5000 to $5FE0 holds maps
+*$5FF0 holds player information
 *$6000 to $7000 holds enemies
-*Enemy:
-*Byte   Name
+
+*Enemies:
+*Byte:  Name
 *0      Health
 *1      Damage/level
-*2      Enemy type (Knight, mage, rogue)
-*4      Coordinates
+*2      enemy type (Knight, mage, rogue)
+*4 & 5  Coordinates
+
+*Player:
+*Byte:  Name
+*0+A3   Health
+*1      Damage/level
+*2+A5   Class (Knight, mage, rogue)
+*3+A4   Game state
+*4-5+A6 Coordinates
+*6-7    Last coordinates
+    
+*Game state : 0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
+*Class      : 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
 
 
 *-------------------------------------------------------
@@ -49,19 +63,26 @@ BLUE        EQU $0000FF00   Blue colour value
 WHITE       EQU $00FFFFFF   White colour value
 FONT        EQU $01090000   Font value
 
+PLAYER      EQU $5FF0       Memory address for player information
+DAMAGE      EQU 1           The number of bytes to move from the charater before reaching the damage
+CLASS       EQU 2           The number of bytes to move from the charater before reaching the class
+GAME_STATE  EQU 3           The number of bytes to move from the charater before reaching the game state
+POSITION    EQU 4           The number of bytes to move from the charater before reaching the position
+P_POSITION  EQU 6           The number of bytes to move from the charater before reaching the previous position
+
 
 
 *Start of Game
 start:
-    move.b  #100,$4000 put score/health in memory location $4000
-    lea     $4000,A3   assign address A3 to that memory location
+    move.b  #10,$5FF0  put score/health in memory location $5FF0
+    lea     $5FF0,A3   assign address A3 to that memory location
     
-    move.b  #0,$4010   put game state number in memory location $4010
-    lea     $4010,A4   assign address A4 to that memory location
+    move.b  #0,$5FF3   put game state number in memory location $5FF3
+    lea     $5FF3,A4   assign address A4 to that memory location
     *0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
 
-    move.b  #0,$4020   put class number in memory location $4020
-    lea     $4020,A5   assign address A5 to that memory location
+    move.b  #0,$5FF2   put class number in memory location $5FF2
+    lea     $5FF2,A5   assign address A5 to that memory location
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
     bsr     setup_world
@@ -92,6 +113,7 @@ welcome:
     move.b  #14,D0          move literal 14 to DO
     trap    #15             trap and interpret value in D0
     bsr     endl            branch to endl subroutine
+    
     rts                     return from welcome: subroutine
 
 *-------------------------------------------------------
@@ -193,6 +215,7 @@ manage_input:
     BEQ     role_input      Branch to the manage input for the role picking
     CMP.B   #5,(A4)         Check which state the game is in
     BEQ     wall_collisions Branch to the manage input for the movement
+    CMP.B   #6,(A4)         Check which state the game is in
     BNE     fake_gamestate  branch to display a message if the gamestate is undifined
     
     rts                     Return out of subroutine
@@ -205,9 +228,9 @@ invalid_input:
     bra     input           Go back to taking input
     
 fake_gamestate:
-    lea     fake_gamestate_msg,A1     assign message to address register A1
-    move.b  #14,D0          move literal 14 to DO
-    trap    #15             Display the error message
+    lea     fake_gamestate_msg,A1   Assign message to address register A1
+    move.b  #14,D0                  move literal 14 to DO
+    trap    #15                     Display the error message
     rts
 
 *-------------------------------------------------------
@@ -269,11 +292,6 @@ enter_combat:
     LEA     encounter_msg,A1    Load the encounter message int A1
     move.b  #14,D0              Move #14 to D0 to display message
     trap    #15                 Display the loaded message
-    
-    *TEMP*
-    *bsr     random_number
-    *move.b  #3,D0
-    *trap    #15
     
     bsr     press_continue      Branch to the press to continue subroutine
     
@@ -416,6 +434,7 @@ move_north:
     CMP.B   #13,(A6)
     BEQ     movement_blocked
     
+    move.w  A6,$5FF6            Move the player's previous location to a memory address for storage
     sub     #16,A6              Move the player north
     
     rts
@@ -437,6 +456,7 @@ move_south:
     CMP.B   #14,(A6)
     BEQ     movement_blocked
     
+    move.w  A6,$5FF6            Move the player's previous location to a memory address for storage
     add     #16,A6              Move the player south
     
     rts
@@ -458,12 +478,8 @@ move_west:
     CMP.B   #14,(A6)
     BEQ     movement_blocked
     
+    move.w  A6,$5FF6            Move the player's previous location to a memory address for storage
     sub     #1,A6               Move the player west
-    
-    *lea     move_west_msg,A1    Load the message
-    *move.b  #14,D0              Move the trap command to display a message
-    *trap    #15                 Display the move north message
-    *bsr     press_continue          Pause the game until a key is pressed
     
     rts
     
@@ -484,6 +500,7 @@ move_east:
     CMP.B   #14,(A6)
     BEQ     movement_blocked
     
+    move.w  A6,$5FF6                Move the player's previous location to a memory address for storage
     add     #1,A6                   Move the player east
     
     rts
@@ -503,6 +520,8 @@ combat:
     lea     skeleton_msg,A1 Load the skeleton message
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
+    lea     skeleton2_msg,A1 Load the skeleton message
+    trap    #15             Display the loaded message
     
     bsr endl                Break to a new line
 
@@ -513,8 +532,153 @@ combat:
     move.b  #4,D5           Move the number 4 to D5 to tell the program how many options there are
     
     bsr     input           branch to the input subroutine
+    
+    CMP.B   #1,D1
+    BEQ     block_counter
+    CMP.B   #2,D1
+    BEQ     cast_magic
+    CMP.B   #3,D1
+    BEQ     melee_attack
+    CMP.B   #4,D1
+    BEQ     try_run
+    
     rts
     
+block_counter:
+    bsr     random_number       Get a random number 1-100
+    
+    CMP.W   #33,D2              Compare random with #33
+    BLE     both_block          Enemy tries to block - attack failed
+    CMP.W   #66,D2              Compare random with #66
+    BLE     hit_by_magic        Enemy casts magic - player takes damage      
+    BGT     hit_against_melee   Enemy tried to lunge - enemy takes damage
+    
+    rts                         Return from subroutine
+    
+cast_magic:
+    bsr     random_number       Get a random number 1-100
+
+    CMP.W   #33,D2              Compare random with #33
+    BLE     hit_against_block    Enemy blocks - enemy takes damage
+    CMP.W   #66,D2              Compare random with #66
+    BLE     both_cast_magic     Enemy casts magic - attack fails     
+    BGT     hit_by_melee        Enemy lunges forward - player takes damage
+    
+    rts                         Return from subroutine
+
+melee_attack:
+    bsr     random_number       Get a random number 1-100
+
+    CMP.W   #33,D2              Compare random with #33
+    BLE     hit_by_counter      Enemy blocks and counters - player takes damage
+    CMP.W   #66,D2              Compare random with #66
+    BLE     hit_against_magic   Enemy casts magic - player takes damage     
+    BGT     both_melee          Enemy lunges forward - attack fails
+    
+    rts                         Return from subroutine
+
+try_run:
+    bsr     random_number
+    
+    CMP.W   #40,D2
+    BLT     escape_attack
+    BGE     fail_escape
+    
+    bsr     press_continue
+    
+    rts
+    
+escape_attack:
+    move.w  $5FF6,A6        Move the player to their position before the battle
+    move.b  #5,(A4)         Switch game state
+    
+    lea     escape_msg,A1   Load escape message
+    move.b  #14,D0          Move literal for trap command
+    trap    #15             Trap 15 to display messgae
+    
+    bsr     press_continue  Pause until the player presses to continue
+    
+    rts                     Return from subroutine
+    
+fail_escape:
+    lea     fail_escape_msg,A1  Load fail escape message
+    move.b  #14,D0              Move literal for trap command
+    trap    #15                 Trap 15 to display messgae
+    
+    bsr     press_continue      Pause until the player presses to continue
+    rts
+    
+both_block:
+    move.b  #14,D0
+    lea     both_block_msg,A1
+    trap    #15
+    
+    bsr     press_continue
+    rts
+    
+both_cast_magic:
+    move.b  #14,D0
+    lea     both_cast_magic_msg,A1
+    trap    #15
+    
+    bsr     press_continue
+    rts
+
+both_melee:
+    move.b  #14,D0
+    lea     both_melee_msg,A1
+    trap    #15  
+    
+    bsr     press_continue
+    rts
+
+hit_against_block:
+    move.b  #14,D0
+    lea     hit_against_block_msg,A1
+    trap    #15  
+    
+    bsr     press_continue
+    rts
+
+hit_against_magic:
+    move.b  #14,D0
+    lea     hit_against_magic_msg,A1
+    trap    #15
+    
+    bsr     press_continue
+    rts
+
+hit_against_melee:
+    move.b  #14,D0
+    lea     hit_against_melee_msg,A1
+    trap    #15
+    
+    bsr     press_continue
+    rts
+
+hit_by_counter:
+    move.b  #14,D0
+    lea     hit_by_counter_msg,A1
+    trap    #15  
+    
+    bsr     press_continue
+    rts
+
+hit_by_magic:
+    move.b  #14,D0
+    lea     hit_by_magic_msg,A1
+    trap    #15  
+    
+    bsr     press_continue
+    rts
+
+hit_by_melee:
+    move.b  #14,D0
+    lea     hit_by_melee_msg,A1
+    trap    #15
+    
+    bsr     press_continue
+    rts
 
 *-------------------------------------------------------
 *-------------------Misc Subroutines--------------------
@@ -538,7 +702,7 @@ random_number:              *Psuedo random number generator, courtesy of Pádraig
     swap    D1              swap upper and lower words of D1 to put remainder in low word
     addq.w  #1,D1           d1.w contains number from 1 to 100
     move    D1,D2           d2 = d1
-    clr     D1
+    clr.l   D1
     
     rts                     Returns from random generation subroutine
     
@@ -671,7 +835,7 @@ draw_player:
     move.b  #21,D0          Move #21 to D0 for trap command 21
     move.l  #WHITE,D1       Move the colour green to D1
     trap    #15             Set the colour
-    clr     D1
+    clr.l   D1
     
     move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
     
@@ -710,7 +874,7 @@ draw_enemy:
     move.b  #21,D0          Move #21 to D0 for trap command 21
     move.l  #WHITE,D1       Move the colour green to D1
     trap    #15             Set the colour
-    clr     D1
+    clr.l   D1
     
     move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
     
@@ -924,22 +1088,39 @@ combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
                 dc.b    '2> Cast Magic.',$0D,$0A
                 dc.b    '3> Attack Swiftly.',$0D,$0A
                 dc.b    '4> Try Run.',$0D,$0A,0
-skeleton_msg    dc.b    '           .-.',$0D,$0A
-                dc.b    ' /\____/\ (o.o)',$0D,$0A
-                dc.b    '|  _||_  | |=|',$0D,$0A
-                dc.b    ' \/ || \/ __|__',$0D,$0A
-                dc.b    '    ||\_//.=|=.\\',$0D,$0A
-                dc.b    '    ||\_/ .=|=. \\',$0D,$0A
-                dc.b    '    ||    .=|=. //',$0D,$0A
-                dc.b    '    ||    (_=_)//',$0D,$0A
-                dc.b    '    ||   (:| |:)',$0D,$0A
-                dc.b    '    ||    || ||',$0D,$0A
-                dc.b    '    ||    () ()',$0D,$0A
-                dc.b    '    /\    || ||',$0D,$0A
-                dc.b    '    ||    || ||',$0D,$0A
-                dc.b    '    \/  ==   ==',$0D,$0A,0
+skeleton_msg:   dc.b    '           .-.     ',$0D,$0A
+                dc.b    ' /\____/\ (o.o)    ',$0D,$0A
+                dc.b    '|  _||_  | |=|     ',$0D,$0A
+                dc.b    ' \/ || \/ __|__    ',$0D,$0A
+                dc.b    '    ||\_//.=|=.\\  ',$0D,$0A
+                dc.b    '    ||\_/ .=|=. \\ ',$0D,$0A
+                dc.b    '    ||    .=|=. // ',$0D,$0A,0
+skeleton2_msg:  dc.b    '    ||    (_=_)//  ',$0D,$0A
+                dc.b    '    ||   (:| |:)   ',$0D,$0A
+                dc.b    '    ||    || ||    ',$0D,$0A
+                dc.b    '    ||    () ()    ',$0D,$0A
+                dc.b    '    /\    || ||    ',$0D,$0A
+                dc.b    '    ||    || ||    ',$0D,$0A
+                dc.b    '    \/  ==   ==    ',$0D,$0A,0
+escape_msg:             dc.b    'You escaped the monster!',$0D,$0A,0
+fail_escape_msg:        dc.b    'You try to run, but the monster catches and damages you!',$0D,$0A,0
+both_block_msg:         dc.b    'You both block, No damage is done!',$0D,$0A,0
+both_cast_magic_msg:    dc.b    'You both cast magic at eachother, the spells clash in mid air! No damage',$0D,$0A
+                        dc.b    'is done!',$0D,$0A,0
+both_melee_msg:         dc.b    'You both lunge forward, metal clashes together, but no damage is done!',$0D,$0A,0
+hit_against_block_msg:  dc.b    'The enemy blocks, you cast a cast a spell and it damages the monster!',$0D,$0A,0
+hit_against_magic_msg:  dc.b    'The enemy begins to charge a spell but you lunge forward and hit it first,',$0D,$0A
+                        dc.b    'damaging the monster!',$0D,$0A,0
+hit_against_melee_msg:  dc.b    'The enemy lunges forward but you block quicky, then counter, damaging the',$0D,$0A
+                        dc.b    'monster!',$0D,$0A,0
+hit_by_counter_msg:     dc.b    'You lunge at the enemy but they block before you hit, they swing around quickly',$0D,$0A
+                        dc.b    'and damage you!',$0D,$0A,0
+hit_by_magic_msg:       dc.b    'You try to block the enemies attack, but they cast a spell that breaks through',$0D,$0A
+                        dc.b    'your defense and damages you!',$0D,$0A,0
+hit_by_melee_msg:       dc.b    'You try to charge up a spell, but the enemy lunges forward and damages you!',$0D,$0A,0
 
     end start
+
 
 
 
