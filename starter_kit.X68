@@ -270,6 +270,11 @@ enter_combat:
     move.b  #14,D0              Move #14 to D0 to display message
     trap    #15                 Display the loaded message
     
+    *TEMP*
+    *bsr     random_number
+    *move.b  #3,D0
+    *trap    #15
+    
     bsr     press_continue      Branch to the press to continue subroutine
     
     bsr     clear_screen        Clear the screen
@@ -517,13 +522,25 @@ combat:
 press_continue:
     bsr     endl
 
-    lea     continue_msg,A1     Load message into A1
-    move.b  #14,D0              Move the trap command to display a message
-    trap    #15                 display the "press any ket to continue" text
+    lea     continue_msg,A1 Load message into A1
+    move.b  #14,D0          Move the trap command to display a message
+    trap    #15             display the "press any ket to continue" text
     
-    move.b  #4,D0               Move the trap command to take input
-    trap    #15                 take input to freeze the game
-    rts                         Return from the 'press continue' subroutine
+    move.b  #4,D0           Move the trap command to take input
+    trap    #15             take input to freeze the game
+    rts                     Return from the 'press continue' subroutine
+    
+random_number:              *Psuedo random number generator, courtesy of Pádraig
+    move.b  #8,D0
+    trap    #15
+    and.l   #$5FFFFF,d1     prevent overflow in divu
+    divu    #100,D1         time count / 100
+    swap    D1              swap upper and lower words of D1 to put remainder in low word
+    addq.w  #1,D1           d1.w contains number from 1 to 100
+    move    D1,D2           d2 = d1
+    clr     D1
+    
+    rts                     Returns from random generation subroutine
     
 *-------------------------------------------------------
 *----------------------Draw loop------------------------
@@ -923,6 +940,7 @@ skeleton_msg    dc.b    '           .-.',$0D,$0A
                 dc.b    '    \/  ==   ==',$0D,$0A,0
 
     end start
+
 
 
 
