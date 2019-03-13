@@ -18,6 +18,7 @@
 *-------------------Game Information-------------------
 *-------------------------------------------------------
 *A6 is used for player coordinates
+*A5 is used for enemy coordinates when in combat or looping through them
 *D5 is used occasionally for input range
 *$5000 to $5FE0 holds maps
 *$5FF0 holds player information
@@ -28,14 +29,15 @@
 *0      Health
 *1      Damage/level
 *2      enemy type (Knight, mage, rogue)
+*3      Alive state (1 == alive, 0 == dead)
 *4 & 5  Coordinates
 
 *Player:
 *Byte:  Name
-*0+A3   Health
+*0      Health
 *1      Damage/level
-*2+A5   Class (Knight, mage, rogue)
-*3+A4   Game state
+*2      Class (Knight, mage, rogue)
+*3      Game state
 *4-5+A6 Coordinates
 *6-7    Last coordinates
     
@@ -55,6 +57,7 @@ min_weapons EQU 6      min weapons
 win_point   EQU 5      points accumilated on win
 lose_point  EQU 8      points deducted on a loss
 
+FIRST_ENEMY EQU $6000
 ENEMY_MAX   EQU 1      Number of enemies in the game
 
 RED         EQU $000000FF   Red colour value
@@ -64,11 +67,15 @@ WHITE       EQU $00FFFFFF   White colour value
 FONT        EQU $01090000   Font value
 
 PLAYER      EQU $5FF0       Memory address for player information
+GAME_STATE  EQU $5FF3       The memory address of the game state
+PLA_CLASS   EQU $5FF2       The memory address for the player class
+PLA_P_POS   EQU $5FF6       Memory location of the player's previous position
+
 DAMAGE      EQU 1           The number of bytes to move from the charater before reaching the damage
 CLASS       EQU 2           The number of bytes to move from the charater before reaching the class
-GAME_STATE  EQU 3           The number of bytes to move from the charater before reaching the game state
+ALIVE       EQU 3           The number of bytes to move from the charater before reaching the alive state
 POSITION    EQU 4           The number of bytes to move from the charater before reaching the position
-P_POSITION  EQU 6           The number of bytes to move from the charater before reaching the previous position
+
 
 
 
@@ -78,11 +85,9 @@ start:
     lea     $5FF0,A3   assign address A3 to that memory location
     
     move.b  #0,$5FF3   put game state number in memory location $5FF3
-    lea     $5FF3,A4   assign address A4 to that memory location
     *0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
 
     move.b  #0,$5FF2   put class number in memory location $5FF2
-    lea     $5FF2,A5   assign address A5 to that memory location
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
     bsr     setup_world
@@ -130,7 +135,7 @@ pick_role:
     move.b  #14,D0           move literal 14 to DO
     trap    #15              trap and interpret value in D0
     
-    move.b  #3,D5           Move the number 3 to D5 to tell the program how many options there are
+    move.l  #3,D5           Move the number 3 to D5 to tell the program how many options there are
     
     bsr     input           branch to the input subroutine
     
@@ -139,7 +144,7 @@ pick_role:
     rts                     return from pick_role subroutine
     
 role_input:
-    move.b  D1,(A5)         Move the role number to A5 to hold the class number
+    move.b  D1,PLA_CLASS    Move the role number to player class memory location to hold the class number
     
     *Give the player a message depending on the role chosen
     CMP.B   #1,D1
@@ -158,7 +163,7 @@ knight_select:
     move.b  #14,D0          move literal 14 to DO
     trap    #15             Display the knight message
     
-    move.b  #5,(A4)         Change the game state to the movement state
+    move.b  #5,GAME_STATE   Change the game state to the movement state
     lea     $514A,A6        Set the player coordinate to the first corridor
     
     rts                     Return from the sub routine
@@ -168,8 +173,8 @@ mage_select:
     move.b  #14,D0          move literal 14 to DO
     trap    #15             Display the mage message
     
-    move.b  #5,(A4)         Change the game state to the movement state
-    lea     $514A,A6         Set the player coordinate to the first corridor
+    move.b  #5,GAME_STATE   Change the game state to the movement state
+    lea     $514A,A6        Set the player coordinate to the first corridor
     
     rts                     Return from the sub routine
 
@@ -178,8 +183,8 @@ rogue_select:
     move.b  #14,D0          move literal 14 to DO
     trap    #15             Display the rogue message
     
-    move.b  #5,(A4)         Change the game state to the movement state
-    lea     $514A,A6         Set the player coordinate to the first corridor
+    move.b  #5,GAME_STATE   Change the game state to the movement state
+    lea     $514A,A6        Set the player coordinate to the first corridor
     
     rts                     Return from the sub routin
     
@@ -209,13 +214,13 @@ manage_input:
     BLT     invalid_input   Error if less than 1
     
     CMP     D5,D1           Compare input against max value
-    BGT     invalid_input   Error if less than max value
+    BGT     invalid_input   Error if more than max value
     
-    CMP.B   #0,(A4)         Check which state the game is in
+    CMP.B   #0,GAME_STATE   Check which state the game is in
     BEQ     role_input      Branch to the manage input for the role picking
-    CMP.B   #5,(A4)         Check which state the game is in
+    CMP.B   #5,GAME_STATE   Check which state the game is in
     BEQ     wall_collisions Branch to the manage input for the movement
-    CMP.B   #6,(A4)         Check which state the game is in
+    CMP.B   #6,GAME_STATE   Check which state the game is in
     BNE     fake_gamestate  branch to display a message if the gamestate is undifined
     
     rts                     Return out of subroutine
@@ -239,6 +244,7 @@ fake_gamestate:
 gameloop:
     bsr     clear_screen    clears the screen  
     bsr     draw            branch to draw screen subroutine
+    bsr     draw_hud
     bsr     update          branch to update game subroutine 
     bsr     gameplay        branch to gameplay subroutine
     bra     gameloop        Continue looping the game loop     
@@ -255,39 +261,46 @@ gameloop:
 *  Complete Quest
 *------------------------------------------------------- 
 update:
-    CMP.B   #5,(A4)         Check which state the game is in
-    BEQ     enemy_check     Check for enemies if in movement state
+    CMP.B   #5,GAME_STATE       Check which state the game is in
+    BEQ     enemy_check         Check for enemies if in movement state
+    CMP.B   #6,GAME_STATE       Check which state the game is in
+    BEQ     enemy_alive_check   Check if enemy is dead if in combat
+    
     rts
     
 enemy_check:
-    move.w  $6004,D1    Move the enemy position to D1
-    move.w  A6,D2       Move the player position to D2
+    lea     FIRST_ENEMY,A5  Load the enemy information into A5
+    add.w   #ALIVE,A5       Move into enemy information to check if its alive
+    CMP.B   #0,(A5)         Check if the enemy is alive
+    BEQ     return          Return from the check if the enemy is dead
+    
+    add.w   #1,A5           Move from the enemy alive state to its position
+    move.w  A6,D2           Move the player position to D2
     
     *Check if the player is beside an enemy
     sub.w   #16,D2          Check north
-    CMP.W   D1,D2           
+    CMP.W   (A5),D2           
     BEQ     enter_combat    Enter the player into combat
     
     add.w   #32,D2          Check south
-    CMP.W   D1,D2           
+    CMP.W   (A5),D2           
     BEQ     enter_combat    Enter the player into combat
     
     sub.w   #17,D2          Check west
-    CMP.W   D1,D2           
+    CMP.W   (A5),D2           
     BEQ     enter_combat    Enter the player into combat
     
     add.w   #2,D2           Check east
-    CMP.W   D1,D2           
+    CMP.W   (A5),D2           
     BEQ     enter_combat    Enter the player into combat
     
     rts     Return if not touching an enemy
     
 enter_combat:
-    sub.w   #4,D1       Get the memory address of the enemy opposed to it's position
-    move.w  D1,A0       Move the enemy address to address register A0 to modify it
-    move.b  #6,(A4)     Move to combat state
+    sub.w   #4,A5               Get the memory address of the enemy opposed to it's position
+    move.b  #6,GAME_STATE       Move to combat state
     
-    bsr     endl        Line break
+    bsr     endl                Line break
     
     LEA     encounter_msg,A1    Load the encounter message int A1
     move.b  #14,D0              Move #14 to D0 to display message
@@ -297,6 +310,36 @@ enter_combat:
     
     bsr     clear_screen        Clear the screen
     
+    bsr     draw_skeleton       Draw the enemy
+    bsr     draw_battle_info    Draw the info
+    
+    rts
+    
+enemy_alive_check:
+    CMP.B   #0,(A5)     Compare the enemy health with zero
+    BEQ     enemy_died  If the enemy health is zero, they died
+    CMP.B   #100,(A5)   Compare the enemy health with 100
+    BGT     enemy_died  If the enemy health is greater than 100, their health has underflowed and they're dead
+    
+    rts
+    
+enemy_died:
+    bsr     endl            Break to a new line
+
+    lea     battle_won_msg,A1   Load the won battle message
+    move.b  #14,D0              Move the literal #14 to D0 for trap task #14
+    trap    #15                 Display the message
+    
+    move.b  #5,GAME_STATE   Set the game state mack to movement state
+    add.w   #ALIVE,A5       Move from the enemy health to its alive status
+    move.b  #0,(A5)         Set the enemy as dead
+    
+    bsr     press_continue
+    
+    bsr     clear_screen    Clear the screen
+    bsr     draw            Draw the map for first frame back in movement
+    bsr     draw_hud        Draw the hud for first frame back in movement
+    
     rts
     
 *-------------------------------------------------------
@@ -305,8 +348,96 @@ enter_combat:
 * quest
 *------------------------------------------------------- 
 draw:
-    CMP.B   #5,(A4)     Check which state the game is in
-    BEQ     draw_loop   If in the movement state, draw the map
+    CMP.B   #5,GAME_STATE   Check which state the game is in
+    BEQ     draw_loop       If in the movement state, draw the map
+    CMP.B   #6,GAME_STATE   Check which state the game is in
+    BEQ     draw_skeleton   If in the combat state, draw the enemy
+    rts
+    
+draw_skeleton:
+    lea     skeleton_msg,A1 Load the skeleton message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    rts
+    
+draw_hud:
+    CMP.B   #5,GAME_STATE       Check which state the game is in
+    BEQ     draw_player_info    If in the movement state, draw the player info
+    CMP.B   #6,GAME_STATE       Check which state the game is in
+    BEQ     draw_battle_info     If in the combat state, draw the combat info
+    
+    rts
+
+draw_player_info:
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
+    
+    move.w  D1,D3           Move the current cursor position to D3 for later
+    
+    move.w  #$3201,D1           
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     health_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    move.b  PLAYER,D1       Move the player health value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
+    move.w  D3,D1           Move the current cursor position to D3 for later
+    
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11          
+    trap    #15             Set the cursor position with trap command 11
+    
+    clr     D1              Clear D1 for later use
+    
+    rts
+
+draw_battle_info:
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
+    
+    move.w  D1,D3           Move the current cursor position to D3 for later
+    
+    * Move cursor to draw player info
+    move.w  #$2001,D1           
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     health_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    move.b  PLAYER,D1       Move the player health value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
+    * Move the cursor to draw enemy info
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #$2002,D1       
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     enemy_health_msg,A1 Load the hud message
+    move.b  #14,D0              Move literal 14 for display message trap command
+    trap    #15                 Display the loaded message
+    
+    move.b  FIRST_ENEMY,D1  Move the player health value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
+    * Move the cursor back to its previous position
+    move.w  D3,D1           Move the previous cursor position back to D1
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11          
+    trap    #15             Set the cursor position with trap command 11
+    
+    clr     D1              Clear D1 for later use
+    
     rts
 
 *-------------------------------------------------------
@@ -314,11 +445,11 @@ draw:
 *------------------------------------------------------- 
 gameplay:
     bsr     endl        Break to a new line
-    CMP.B   #0,(A4)     Check which stage the game is in
+    CMP.B   #0,GAME_STATE     Check which stage the game is in
     BEQ     pick_role   branch to the pick role subroutine
-    CMP.B   #5,(A4)     Check which stage the game is in
+    CMP.B   #5,GAME_STATE     Check which stage the game is in
     BEQ     movement    branch to the movement subroutine
-    CMP.B   #6,(A4)     Check which stage the game is in
+    CMP.B   #6,GAME_STATE     Check which stage the game is in
     BEQ     combat      branch to the combat subroutine
     rts                 Return from 'gameplay' subroutine
 
@@ -370,8 +501,6 @@ replay:
     
     move.b  #4,D0
     trap    #15
-
-    move.b  #0,(A5)     Reset the game state for restart
     
     cmp     #exit,D1
     beq     end         if SR Z register contains 1 beq => Branch Equals
@@ -393,7 +522,7 @@ movement:
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
 
-    move.b  #4,D5           Move the number 4 to D5 to tell the program how many options there are
+    move.l  #4,D5           Move the number 4 to D5 to tell the program how many options there are
     
     bsr     input           branch to the input subroutine
     rts
@@ -434,7 +563,7 @@ move_north:
     CMP.B   #13,(A6)
     BEQ     movement_blocked
     
-    move.w  A6,$5FF6            Move the player's previous location to a memory address for storage
+    move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     sub     #16,A6              Move the player north
     
     rts
@@ -456,7 +585,7 @@ move_south:
     CMP.B   #14,(A6)
     BEQ     movement_blocked
     
-    move.w  A6,$5FF6            Move the player's previous location to a memory address for storage
+    move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     add     #16,A6              Move the player south
     
     rts
@@ -478,7 +607,7 @@ move_west:
     CMP.B   #14,(A6)
     BEQ     movement_blocked
     
-    move.w  A6,$5FF6            Move the player's previous location to a memory address for storage
+    move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     sub     #1,A6               Move the player west
     
     rts
@@ -500,7 +629,7 @@ move_east:
     CMP.B   #14,(A6)
     BEQ     movement_blocked
     
-    move.w  A6,$5FF6                Move the player's previous location to a memory address for storage
+    move.w  A6,PLA_P_POS            Move the player's previous location to a memory address for storage
     add     #1,A6                   Move the player east
     
     rts
@@ -517,19 +646,13 @@ movement_blocked:
 *---------------------Manage Combat---------------------
 *-------------------------------------------------------
 combat:
-    lea     skeleton_msg,A1 Load the skeleton message
-    move.b  #14,D0          Move literal 14 for display message trap command
-    trap    #15             Display the loaded message
-    lea     skeleton2_msg,A1 Load the skeleton message
-    trap    #15             Display the loaded message
-    
     bsr endl                Break to a new line
 
     lea     combat_msg,A1   Load the combat message
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
 
-    move.b  #4,D5           Move the number 4 to D5 to tell the program how many options there are
+    move.l  #4,D5           Move the number 4 to D5 to tell the program how many options there are
     
     bsr     input           branch to the input subroutine
     
@@ -589,8 +712,8 @@ try_run:
     rts
     
 escape_attack:
-    move.w  $5FF6,A6        Move the player to their position before the battle
-    move.b  #5,(A4)         Switch game state
+    move.w  PLA_P_POS,A6    Move the player to their position before the battle
+    move.b  #5,GAME_STATE   Switch game state
     
     lea     escape_msg,A1   Load escape message
     move.b  #14,D0          Move literal for trap command
@@ -603,7 +726,9 @@ escape_attack:
 fail_escape:
     lea     fail_escape_msg,A1  Load fail escape message
     move.b  #14,D0              Move literal for trap command
-    trap    #15                 Trap 15 to display messgae
+    trap    #15                 Trap 15 to display message
+    
+    sub.b   #1,PLAYER           Remove one from the player's health
     
     bsr     press_continue      Pause until the player presses to continue
     rts
@@ -637,6 +762,8 @@ hit_against_block:
     lea     hit_against_block_msg,A1
     trap    #15  
     
+    sub.b   #1,(A5)         Remove one from the enemy's health
+    
     bsr     press_continue
     rts
 
@@ -644,6 +771,8 @@ hit_against_magic:
     move.b  #14,D0
     lea     hit_against_magic_msg,A1
     trap    #15
+    
+    sub.b   #1,(A5)         Remove one from the enemy's health
     
     bsr     press_continue
     rts
@@ -653,6 +782,8 @@ hit_against_melee:
     lea     hit_against_melee_msg,A1
     trap    #15
     
+    sub.b   #1,(A5)         Remove one from the enemy's health
+    
     bsr     press_continue
     rts
 
@@ -660,6 +791,8 @@ hit_by_counter:
     move.b  #14,D0
     lea     hit_by_counter_msg,A1
     trap    #15  
+    
+    sub.b   #1,PLAYER           Remove one from the player's health
     
     bsr     press_continue
     rts
@@ -669,6 +802,8 @@ hit_by_magic:
     lea     hit_by_magic_msg,A1
     trap    #15  
     
+    sub.b   #1,PLAYER           Remove one from the player's health
+    
     bsr     press_continue
     rts
 
@@ -676,6 +811,8 @@ hit_by_melee:
     move.b  #14,D0
     lea     hit_by_melee_msg,A1
     trap    #15
+    
+    sub.b   #1,PLAYER           Remove one from the player's health
     
     bsr     press_continue
     rts
@@ -705,6 +842,9 @@ random_number:              *Psuedo random number generator, courtesy of Pádraig
     clr.l   D1
     
     rts                     Returns from random generation subroutine
+    
+return:   *Subroutine to branch to to break out of a subroutine when a condition is met
+    rts
     
 *-------------------------------------------------------
 *----------------------Draw loop------------------------
@@ -846,6 +986,11 @@ draw_player:
     rts
     
 check_for_enemy:
+    lea     FIRST_ENEMY,A5  Load the memory address of the first enemy
+    add.w   #ALIVE,A5       Add to the enemy memory address to get to its alive state
+    CMP.B   #0,(A5)         Check if the enemy is alive
+    BEQ     return          Return from the subroutine if not
+    
     move.w  $6004,D1
     move.w  D1,A0
     CMP.W   A0,A2
@@ -1006,10 +1151,11 @@ setup_world:
     rts
 
 setup_enemies:
-    move.b  #5,$6000    Health - Setup the first enemy
+    move.b  #1,$6000    Health - Setup the first enemy
     move.b  #1,$6001    Damage/level
     move.b  #1,$6002    Class type (Knight)
-    move.w  #$50EE,$6004  Move enemy coordinates
+    move.b  #1,$6003    Alive state (Alive)
+    move.w  #$513A,$6004  Move enemy coordinates
     
     rts
     
@@ -1094,8 +1240,8 @@ skeleton_msg:   dc.b    '           .-.     ',$0D,$0A
                 dc.b    ' \/ || \/ __|__    ',$0D,$0A
                 dc.b    '    ||\_//.=|=.\\  ',$0D,$0A
                 dc.b    '    ||\_/ .=|=. \\ ',$0D,$0A
-                dc.b    '    ||    .=|=. // ',$0D,$0A,0
-skeleton2_msg:  dc.b    '    ||    (_=_)//  ',$0D,$0A
+                dc.b    '    ||    .=|=. // ',$0D,$0A
+                dc.b    '    ||    (_=_)//  ',$0D,$0A
                 dc.b    '    ||   (:| |:)   ',$0D,$0A
                 dc.b    '    ||    || ||    ',$0D,$0A
                 dc.b    '    ||    () ()    ',$0D,$0A
@@ -1118,8 +1264,14 @@ hit_by_counter_msg:     dc.b    'You lunge at the enemy but they block before yo
 hit_by_magic_msg:       dc.b    'You try to block the enemies attack, but they cast a spell that breaks through',$0D,$0A
                         dc.b    'your defense and damages you!',$0D,$0A,0
 hit_by_melee_msg:       dc.b    'You try to charge up a spell, but the enemy lunges forward and damages you!',$0D,$0A,0
+health_msg:             dc.b    'Health: ',0
+enemy_health_msg:       dc.b    'Enemy Health: ',0
+torch_msg:              dc.b    'Torch Life: ',0
+inventory_msg:          dc.b    'Inventory:',$0D,$0A,0
+battle_won_msg:         dc.b    'The monster collapses at your feet. It is dead!',$0D,$0A,0
 
     end start
+
 
 
 
