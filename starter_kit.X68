@@ -19,6 +19,7 @@
 *-------------------------------------------------------
 *A6 is used for player coordinates
 *A5 is used for enemy coordinates when in combat or looping through them
+*A4 occasionally used for displaying the inventory
 *D5 is used occasionally for input range
 *$5000 to $5FE0 holds maps
 *$5FF0 holds player information
@@ -40,6 +41,9 @@
 *3      Game state
 *4-5+A6 Coordinates
 *6-7    Last coordinates
+*8      Gold
+*9      Potions
+*A      Keys
     
 *Game state : 0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
 *Class      : 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
@@ -70,26 +74,26 @@ PLAYER      EQU $5FF0       Memory address for player information
 GAME_STATE  EQU $5FF3       The memory address of the game state
 PLA_CLASS   EQU $5FF2       The memory address for the player class
 PLA_P_POS   EQU $5FF6       Memory location of the player's previous position
+PLA_GOLD    EQU $5FF8       Memory address for player gold
+PLA_POTIONS EQU $5FF9       Memory address for player potions
+PLA_KEYS    EQU $5FFA       Memory address for player keys
 
 DAMAGE      EQU 1           The number of bytes to move from the charater before reaching the damage
 CLASS       EQU 2           The number of bytes to move from the charater before reaching the class
 ALIVE       EQU 3           The number of bytes to move from the charater before reaching the alive state
 POSITION    EQU 4           The number of bytes to move from the charater before reaching the position
 
+CSR_POS_MOVE    EQU $3201   The cursor position to draw the HUD to when in movement state
+CSR_POS_BATTLE  EQU $2001   The cursor position to draw the HUD to when in battle state
+
+
+
 
 
 
 *Start of Game
 start:
-    move.b  #10,$5FF0  put score/health in memory location $5FF0
-    lea     $5FF0,A3   assign address A3 to that memory location
-    
-    move.b  #0,$5FF3   put game state number in memory location $5FF3
-    *0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
-
-    move.b  #0,$5FF2   put class number in memory location $5FF2
-    * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
-    
+    bsr     setup_player
     bsr     setup_world
     bsr     setup_enemies
 
@@ -376,7 +380,8 @@ draw_player_info:
     
     move.w  D1,D3           Move the current cursor position to D3 for later
     
-    move.w  #$3201,D1           
+    * Display the player health
+    move.w  #CSR_POS_MOVE,D1           
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
     
@@ -388,6 +393,74 @@ draw_player_info:
     move.b  #3,D0           Move literal 3 for display number trap command
     trap    #15             Display the number in D1
     
+    * Display the torch life
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1         
+    add.w   #1,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     torch_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    move.b  PLAYER,D1       Move the player health value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
+    * Display the inventory
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1
+    add.w   #2,D1          
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     inventory_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    * Display the player gold
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1         
+    add.w   #3,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     gold_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    lea     PLA_GOLD,A4
+    bsr     draw_item_number
+    
+    * Display the player potions
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1         
+    add.w   #4,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     potions_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    lea     PLA_POTIONS,A4
+    bsr     draw_item_number
+    
+    * Display the player keys
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1         
+    add.w   #5,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     key_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    lea     PLA_KEYS,A4
+    bsr     draw_item_number
+    
     move.w  D3,D1           Move the current cursor position to D3 for later
     
     move.b  #11,D0          Move the byte #11 to D0 for trap command 11          
@@ -396,6 +469,21 @@ draw_player_info:
     clr     D1              Clear D1 for later use
     
     rts
+    
+draw_item_number:
+    move.b  #14,D0          Move literal 3 for display number trap command
+    lea     bracket_open_msg,A1
+    trap    #15
+
+    move.b  #3,D0           Move literal 3 for display number trap command
+    move.b  (A4),D1         Move the player health value to D1 to display
+    trap    #15             Display the number in D1
+    
+    move.b  #14,D0          Move literal 3 for display number trap command
+    lea     bracket_close_msg,A1
+    trap    #15
+    rts
+    
 
 draw_battle_info:
     move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
@@ -405,7 +493,7 @@ draw_battle_info:
     move.w  D1,D3           Move the current cursor position to D3 for later
     
     * Move cursor to draw player info
-    move.w  #$2001,D1           
+    move.w  #CSR_POS_BATTLE,D1           
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
     
@@ -419,7 +507,8 @@ draw_battle_info:
     
     * Move the cursor to draw enemy info
     move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #$2002,D1       
+    move.w  #CSR_POS_BATTLE,D1
+    add.w   #1,D1
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
     
@@ -1159,6 +1248,21 @@ setup_enemies:
     
     rts
     
+setup_player:
+    move.b  #10,$5FF0  put score/health in memory location $5FF0
+    lea     $5FF0,A3   assign address A3 to that memory location
+    
+    move.b  #0,$5FF3   put game state number in memory location $5FF3
+    *0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
+
+    move.b  #0,$5FF2   put class number in memory location $5FF2
+    * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
+    
+    move.b  #0,PLA_GOLD
+    move.b  #0,PLA_POTIONS
+    move.b  #0,PLA_KEYS
+    
+    rts
     
 *-------------------------------------------------------
 *-------------------Data Delarations--------------------
@@ -1174,7 +1278,6 @@ welcome_msg:    dc.b    '*******************************************************
 potion_msg:     dc.b    'Feed load (each horse needs at least 100 units of feed)'
                 dc.b    $0D,$0A
                 dc.b    'Enter feed load : ',0
-potions_msg:    dc.b    'Number of potions : ',0
 weapons_msg:    dc.b    'Each quest need at least 2 Weapons'
                 dc.b    $0D,$0A
                 dc.b    'minimum requirement is 2 i.e. Sword x 1 and Speer x 1.'
@@ -1189,8 +1292,8 @@ loop_msg:       dc.b    '.',0
 replay_msg:     dc.b    'Enter 0 to Quit any other number to replay : ',0
 hud_msg:        dc.b    'Score : ',0
 
-health:     ds.w    1
-score:      ds.w    1 reserve space for score
+health:         ds.w    1
+score:          ds.w    1 reserve space for score
 
 wake_up_msg:    dc.b    'You awake in a room, on a bed of red velvet, with no memory',$0D,$0A
                 dc.b    'of how you got here. You climb from the frame and look in a nearby mirror',$0D,$0A,0
@@ -1200,27 +1303,27 @@ pick_role_msg:  dc.b    '1> You wear armour of polished iron, a short sword and 
                 dc.b    'looking staff lays near. (Mage class)',$0D,$0A,$0D,$0A
                 dc.b    '3> You wear tight, well-fitting leather armour with reminents of black dye',$0D,$0A
                 dc.b    'stained to the material. Two knives are fastened to your belt. (Rogue class)',$0D,$0A,0
-input_nums_msg:  dc.b    'Enter num between 1 and ',0
-colon_msg:       dc.b    ': ',0
+input_nums_msg: dc.b    'Enter num between 1 and ',0
+colon_msg:      dc.b    ': ',0
 
-input_error_msg: dc.b    'Inputted number is outside of range.',$0D,$0A,0
+input_error_msg:    dc.b    'Inputted number is outside of range.',$0D,$0A,0
 fake_gamestate_msg: dc.b    'Gamestate doesnt exist',$0D,$0A,0
-knight_role_msg: dc.b    'You pick up your sword, grab a torch from the wall, and leave the room.',$0D,$0A
-                dc.b    '- You have chosen the KNIGHT class. You specialise in slow, strong attacks.',$0D,$0A,0
-mage_role_msg:   dc.b    'You pick up your staff, grab a torch from the wall, and leave the room.',$0D,$0A
-                dc.b    '- You have chosen the MAGE class. You specialise in ranged magic attacks.',$0D,$0A,0
-rogue_role_msg:  dc.b    'You fasten your belt, grab a torch from the wall, and leave the room.',$0D,$0A
-                dc.b    '- You have chosen the ROGUE class. You specialise in fast, weak attacks.',$0D,$0A,0
-movement_msg:    dc.b    '1> Move north.',$0D,$0A
+knight_role_msg:    dc.b    'You grab your sword and shield, pull a torch from the wall, and leave the room.',$0D,$0A
+                    dc.b    '- You have chosen the KNIGHT class. You specialise in blocking and countering',$0D,$0A,0
+mage_role_msg:  dc.b    'You pick up your staff, grab a torch from the wall, and leave the room.',$0D,$0A
+                dc.b    '- You have chosen the MAGE class. You specialise in magic attacks.',$0D,$0A,0
+rogue_role_msg: dc.b    'You fasten your belt, grab a torch from the wall, and leave the room.',$0D,$0A
+                dc.b    '- You have chosen the ROGUE class. You specialise in quick melee attacks.',$0D,$0A,0
+movement_msg:   dc.b    '1> Move north.',$0D,$0A
                 dc.b    '2> Move south.',$0D,$0A
                 dc.b    '3> Move west.',$0D,$0A
                 dc.b    '4> Move east.',$0D,$0A,0
-move_north_msg:  dc.b    'Moved north.',$0D,$0A,0
-move_east_msg:   dc.b    'Moved east.',$0D,$0A,0
-move_south_msg:  dc.b    'Moved south.',$0D,$0A,0
-move_west_msg:   dc.b    'Moved west.',$0D,$0A,0
+move_north_msg: dc.b    'Moved north.',$0D,$0A,0
+move_east_msg:  dc.b    'Moved east.',$0D,$0A,0
+move_south_msg: dc.b    'Moved south.',$0D,$0A,0
+move_west_msg:  dc.b    'Moved west.',$0D,$0A,0
 movement_blocked_msg:  dc.b    'A wall blocks your path.',$0D,$0A,0
-continue_msg:    dc.b    'Enter any key to continue... ',0
+continue_msg:   dc.b    'Enter any key to continue... ',0
 
 blank_tile      dc.b    '   ',0
 both_tile       dc.b    '| |',0
@@ -1228,7 +1331,7 @@ left_tile       dc.b    '|  ',0
 right_tile      dc.b    '  |',0
 blocked_tile    dc.b    '\/\',0
 player_mark     dc.b    '*',0
-enemy_mark     dc.b    'X',0
+enemy_mark      dc.b    'X',0
 encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
 combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
                 dc.b    '2> Cast Magic.',$0D,$0A
@@ -1267,10 +1370,16 @@ hit_by_melee_msg:       dc.b    'You try to charge up a spell, but the enemy lun
 health_msg:             dc.b    'Health: ',0
 enemy_health_msg:       dc.b    'Enemy Health: ',0
 torch_msg:              dc.b    'Torch Life: ',0
-inventory_msg:          dc.b    'Inventory:',$0D,$0A,0
+inventory_msg:          dc.b    'Inventory:',0
+gold_msg:               dc.b    '- Gold ',0
+key_msg:                dc.b    '- Key ',0
+potions_msg:            dc.b    '- potion ',0
 battle_won_msg:         dc.b    'The monster collapses at your feet. It is dead!',$0D,$0A,0
+bracket_open_msg        dc.b    '(',0
+bracket_close_msg       dc.b    ')',0
 
     end start
+
 
 
 
