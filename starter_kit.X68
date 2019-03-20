@@ -44,6 +44,7 @@
 *8      Gold
 *9      Potions
 *A      Keys
+*B      Torch life
     
 *Game state : 0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
 *Class      : 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
@@ -56,7 +57,7 @@
 exit        EQU 0      used to exit assembly program
 
 FIRST_ENEMY EQU $6000
-ENEMY_MAX   EQU 1      Number of enemies in the game
+ENEMY_MAX   EQU 2           Number of enemies in the game
 
 RED         EQU $000000FF   Red colour value
 GREEN       EQU $0000FF00   Green colour value
@@ -72,6 +73,7 @@ PLA_P_POS   EQU $5FF6       Memory location of the player's previous position
 PLA_GOLD    EQU $5FF8       Memory address for player gold
 PLA_POTIONS EQU $5FF9       Memory address for player potions
 PLA_KEYS    EQU $5FFA       Memory address for player keys
+PLA_TORCH   EQU $5FFB       Memory address for player torch life
 
 DAMAGE      EQU 1           The number of bytes to move from the charater before reaching the damage
 CLASS       EQU 2           The number of bytes to move from the charater before reaching the class
@@ -81,11 +83,7 @@ POSITION    EQU 4           The number of bytes to move from the charater before
 CSR_POS_MOVE    EQU $3201   The cursor position to draw the HUD to when in movement state
 CSR_POS_BATTLE  EQU $2001   The cursor position to draw the HUD to when in battle state
 
-WIN_POINT   EQU $5109       The position the player has to get to to win
-
-
-
-
+WIN_POINT   EQU $5156       The position the player has to get to to win
 
 
 *Start of Game
@@ -114,7 +112,6 @@ end:
 *-------------------Welcome Subroutine------------------
 *-------------------------------------------------------
 welcome:
-    bsr     endl            branch to endl subroutine
     lea     welcome_msg,A1  assign message to address register A1
     move.b  #14,D0          move literal 14 to DO
     trap    #15             trap and interpret value in D0
@@ -218,8 +215,6 @@ manage_input:
     BEQ     role_input      Branch to the manage input for the role picking
     CMP.B   #5,GAME_STATE   Check which state the game is in
     BEQ     wall_collisions Branch to the manage input for the movement
-    CMP.B   #6,GAME_STATE   Check which state the game is in
-    BNE     fake_gamestate  branch to display a message if the gamestate is undifined
     
     rts                     Return out of subroutine
 
@@ -229,12 +224,6 @@ invalid_input:
     trap    #15             Display the error message
     
     bra     input           Go back to taking input
-    
-fake_gamestate:
-    lea     fake_gamestate_msg,A1   Assign message to address register A1
-    move.b  #14,D0                  move literal 14 to DO
-    trap    #15                     Display the error message
-    rts
 
 *-------------------------------------------------------
 *----------------Gameloop (main loop)-------------------
@@ -255,11 +244,11 @@ update:
     CMP.B   #0,PLAYER           Check if the player health is zero
     BLE     player_dead         Player is dead if health is zero or below
     
-    CMP.W   #WIN_POINT,A6     Check if the player is standing on the win point
+    CMP.W   #WIN_POINT,A6       Check if the player is standing on the win point
     BEQ     won_game            Branch to the won game subroutine
 
     CMP.B   #5,GAME_STATE       Check which state the game is in
-    BEQ     enemy_check         Check for enemies if in movement state
+    BEQ     enemies_check       Check for enemies if in movement state
     CMP.B   #6,GAME_STATE       Check which state the game is in
     BEQ     enemy_alive_check   Check if enemy is dead if in combat
     
@@ -274,7 +263,8 @@ player_dead:
 
     bsr     press_continue  Pause to get input
     bsr     clear_screen    Clear the screen
-    bra     end             End the game
+    move.b  #64,GAME_STATE  Set the game state to end game
+    bra     replay          Give the player the option to restart or quit
     
 won_game:
     bsr     endl            Break to new line
@@ -285,15 +275,35 @@ won_game:
 
     bsr     press_continue  Pause to get input
     bsr     clear_screen    Clear the screen
-    bra     end             End the game
+    move.b  #64,GAME_STATE  Set the game state to end game
+    bra     replay          Give the player the option to restart or quit
+
+
+
+enemies_check:
+    lea     FIRST_ENEMY,A5  Load the memory address of the first enemy
+    move.b  #0,D5           Move the starting enemy number to D5
+    bsr     enemies_loop    Loop through all enemies
+    rts                     Return from subroutine
     
+enemies_loop:
+    bsr     enemy_check     Check for an enemy
+    
+    CMP.B   #ENEMY_MAX,D5   Compare the enemy number with the maximum enemy number
+    BGE     return          Return from the loop if the current enemy number is greater than or equal to the max
+    CMP.B   #5,GAME_STATE   Compare the movement gamestate number with the current gamestate
+    BNE     return          Return from the loop if the game is not in the movement state anymore
+    
+    add.b   #1,D5           Add to the current enemy number
+    add.w   #12,A5          Add to the current enemy pointer to move to the next enemy (16 for next enemy - 4 to get back from position)
+    bra     enemies_loop    Keep looping the enemies
+    
+
 enemy_check:
-    lea     FIRST_ENEMY,A5  Load the enemy information into A5
     add.w   #ALIVE,A5       Move into enemy information to check if its alive
-    CMP.B   #0,(A5)         Check if the enemy is alive
+    CMP.B   #0,(A5)+        Check if the enemy is alive
     BEQ     return          Return from the check if the enemy is dead
     
-    add.w   #1,A5           Move from the enemy alive state to its position
     move.w  A6,D2           Move the player position to D2
     
     *Check if the player is beside an enemy
@@ -417,7 +427,7 @@ draw_player_info:
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
     
-    move.b  PLAYER,D1       Move the player health value to D1 to display
+    move.b  PLA_TORCH,D1    Move the player torch life value to D1 to display
     move.b  #3,D0           Move literal 3 for display number trap command
     trap    #15             Display the number in D1
     
@@ -529,7 +539,7 @@ draw_battle_info:
     move.b  #14,D0              Move literal 14 for display message trap command
     trap    #15                 Display the loaded message
     
-    move.b  FIRST_ENEMY,D1  Move the player health value to D1 to display
+    move.b  (A5),D1         Move the enemy health value to D1 to display
     move.b  #3,D0           Move literal 3 for display number trap command
     trap    #15             Display the number in D1
     
@@ -546,14 +556,14 @@ draw_battle_info:
 *---Game Play (Quest Progress)--------------------------
 *------------------------------------------------------- 
 gameplay:
-    bsr     endl        Break to a new line
-    CMP.B   #0,GAME_STATE     Check which stage the game is in
-    BEQ     pick_role   branch to the pick role subroutine
-    CMP.B   #5,GAME_STATE     Check which stage the game is in
-    BEQ     movement    branch to the movement subroutine
-    CMP.B   #6,GAME_STATE     Check which stage the game is in
-    BEQ     combat      branch to the combat subroutine
-    rts                 Return from 'gameplay' subroutine
+    bsr     endl            Break to a new line
+    CMP.B   #0,GAME_STATE   Check which stage the game is in
+    BEQ     pick_role       Branch to the pick role subroutine
+    CMP.B   #5,GAME_STATE   Check which stage the game is in
+    BEQ     movement        Branch to the movement subroutine
+    CMP.B   #6,GAME_STATE   Check which stage the game is in
+    BEQ     combat          branch to the combat subroutine
+    rts                     Return from 'gameplay' subroutine
 
 *-------------------------------------------------------
 *------------------Screen Decoration--------------------
@@ -579,17 +589,19 @@ clear_screen:
 *------------------------Replay-------------------------
 *-------------------------------------------------------
 replay:
-    bsr     endl
-    lea     replay_msg,A1
-    move.b  #14,D0
-    trap    #15
+    lea     replay_msg,A1   Load the Replay message
+    move.b  #14,D0          Move the number literal 14 to D0 for trap command
+    trap    #15             Display the loaded message
     
-    move.b  #4,D0
-    trap    #15
+    move.b  #2,D5           Move the number of input options to D5
+    bsr     input           Take user input
+    move.b  D1,D2           Move the input to D2 so it's not trampled by the clear screen
     
-    cmp     #exit,D1
-    beq     end         if SR Z register contains 1 beq => Branch Equals
-    bsr     gameloop
+    bsr     clear_screen    Clear the screen
+    
+    cmp.b   #1,D2           Compare the user input against the two options
+    beq     start           Restart if the user enters 1
+    bsr     end             Quit if the user enters 2
 
 endl:
     movem.l D0/A1,-(A7)
@@ -650,6 +662,7 @@ move_north:
     
     move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     sub     #16,A6              Move the player north
+    sub.b   #1,PLA_TORCH        Remove one from the player's torch life
     
     rts
     
@@ -672,6 +685,7 @@ move_south:
     
     move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     add     #16,A6              Move the player south
+    sub.b   #1,PLA_TORCH        Remove one from the player's torch life
     
     rts
 
@@ -694,6 +708,7 @@ move_west:
     
     move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     sub     #1,A6               Move the player west
+    sub.b   #1,PLA_TORCH        Remove one from the player's torch life
     
     rts
     
@@ -714,8 +729,9 @@ move_east:
     CMP.B   #14,(A6)
     BEQ     movement_blocked
     
-    move.w  A6,PLA_P_POS            Move the player's previous location to a memory address for storage
-    add     #1,A6                   Move the player east
+    move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
+    add     #1,A6               Move the player east
+    sub.b   #1,PLA_TORCH        Remove one from the player's torch life
     
     rts
 
@@ -972,7 +988,7 @@ loop_columns:
     
     bsr     draw_tile           Draw the current tile
     bsr     check_for_player    Draw the player in the current tile if they're there
-    bsr     check_for_enemy     Draw an enemy in the current tile if they is one there
+    bsr     check_for_enemies   Draw an enemy in the current tile if they is one there
     bsr     check_for_win_point Draw the win point in the current tile if it's there
     
     add.b   #1,D7               Add to the column count
@@ -1062,14 +1078,15 @@ draw_player:
     move.l  #FONT,D2        Move the font to D2
     trap    #15             Set the colour
     
-    lea     player_mark,A1      load the player symbol
-    move.b  #14,D0              Move #14 to D0 for trap command 14
-    trap    #15                 Draw the player mark
+    lea     player_mark,A1  load the player symbol
+    move.b  #14,D0          Move #14 to D0 for trap command 14
+    trap    #15             Draw the player mark
     
     move.b  #21,D0          Move #21 to D0 for trap command 21
     move.l  #WHITE,D1       Move the colour white to D1
     trap    #15             Set the colour
     clr.l   D1              Clear D1 for later use
+    clr.l   D2              Clear D2 for later use
     
     move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
     
@@ -1079,17 +1096,31 @@ draw_player:
     
     rts
     
-check_for_enemy:
+check_for_enemies:
     lea     FIRST_ENEMY,A5  Load the memory address of the first enemy
-    add.w   #ALIVE,A5       Add to the enemy memory address to get to its alive state
-    CMP.B   #0,(A5)         Check if the enemy is alive
+    move.b  #0,D5           Move the starting enemy number to D5
+    bsr     loop_enemies    Loop through all enemies
+    rts                     Return from subroutine
+    
+loop_enemies:
+    bsr     check_for_enemy Check for an enemy
+    
+    CMP.B   #ENEMY_MAX,D5   Compare the enemy number with the maximum enemy number
+    BGE     return          Return from the loop if the current enemy number is greater than or equal to the max
+    
+    add.b   #1,D5           Add to the current enemy number
+    add.w   #12,A5          Add to the current enemy pointer to move to the next enemy (16 for next enemy - 4 to get back from position)
+    bra     loop_enemies    Keep looping the enemies
+    
+check_for_enemy:
+    add.w   #ALIVE,A5       Add to the enemy memory address to get the enemy's alive state
+    CMP.B   #0,(A5)+        Check if the enemy is alive
     BEQ     return          Return from the subroutine if not
     
-    move.w  $6004,D1
-    move.w  D1,A0
-    CMP.W   A0,A2
-    BEQ     draw_enemy
-    rts
+    
+    CMP.W   (A5),A2         Check if the enemy is in the current position
+    BEQ     draw_enemy      Draw the enemy if it is
+    rts                     Return if the enemy is not in the current position
     
 draw_enemy:
     move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
@@ -1106,14 +1137,15 @@ draw_enemy:
     move.l  #FONT,D2        Move the font to D2
     trap    #15             Set the colour
     
-    lea     enemy_mark,A1       load the enemy symbol
-    move.b  #14,D0              Move #14 to D0 for trap command 14
-    trap    #15                 Draw the player mark
+    lea     enemy_mark,A1   load the enemy symbol
+    move.b  #14,D0          Move #14 to D0 for trap command 14
+    trap    #15             Draw the player mark
     
     move.b  #21,D0          Move #21 to D0 for trap command 21
     move.l  #WHITE,D1       Move the colour white to D1
     trap    #15             Set the colour
     clr.l   D1              Clear D1 for later use
+    clr.l   D2              Clear D2 for later use
     
     move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
     
@@ -1151,6 +1183,7 @@ draw_win_point:
     move.l  #WHITE,D1       Move the colour white to D1
     trap    #15             Set the colour
     clr.l   D1              Clear D1 for later use
+    clr.l   D2              Clear D2 for later use
     
     move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
     
@@ -1282,11 +1315,19 @@ setup_world:
     rts
 
 setup_enemies:
+    * Setup first enemy
     move.b  #3,$6000    Health - Setup the first enemy
-    move.b  #2,$6001    Damage/level
+    move.b  #1,$6001    Damage/level
     move.b  #1,$6002    Class type (Knight)
     move.b  #1,$6003    Alive state (Alive)
     move.w  #$511B,$6004  Move enemy coordinates
+    
+    * Setup second enemy
+    move.b  #3,$6010    Health - Setup the first enemy
+    move.b  #2,$6011    Damage/level
+    move.b  #1,$6012    Class type (Knight)
+    move.b  #1,$6013    Alive state (Alive)
+    move.w  #$5155,$6014  Move enemy coordinates
     
     rts
     
@@ -1302,9 +1343,10 @@ setup_player:
     move.b  #0,PLA_CLASS    put class number in memory location $5FF2
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
-    move.b  #0,PLA_GOLD
-    move.b  #0,PLA_POTIONS
+    move.b  #15,PLA_GOLD
+    move.b  #1,PLA_POTIONS
     move.b  #0,PLA_KEYS
+    move.b  #15,PLA_TORCH
     
     lea     $514A,A6        Set the player coordinate to the first corridor
     move.w  A6,PLA_P_POS    Set the player's previous position to their current
@@ -1323,7 +1365,8 @@ welcome_msg:    dc.b    '*******************************************************
                 dc.b    '************************************************************'
                 dc.b    $0D,$0A,0
 loop_msg:       dc.b    '.',0
-replay_msg:     dc.b    'Enter 0 to Quit any other number to replay : ',0
+replay_msg:     dc.b    '1> Restart the game.',$0D,$0A
+                dc.b    '2> Quit the game.',$0D,$0A,0
 wake_up_msg:    dc.b    'You awake in a room, on a bed of red velvet, with no memory',$0D,$0A
                 dc.b    'of how you got here. Stones crumble from the ceiling, the place looks like an',$0D,$0A
                 dc.b    'old castle. You get a dark feeling from this place, and you know you must',$0D,$0A
