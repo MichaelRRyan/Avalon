@@ -22,11 +22,11 @@
 *A5 is used for shops when in shop screen or when looping through them
 *A4 occasionally used for displaying the inventory
 *D5 is used occasionally for input range
-*$5000 to $5FE0 holds maps
 *$5FF0 holds player information
 *$6000 to $64F0 holds enemies
 *$6500 to $6FF0 holds shops
 *$7000 to $7500 holds loot
+*$8000 to $9000 holds maps
 
 *Enemies:
 *Byte:  Name:
@@ -358,6 +358,9 @@ won_game:
 
     bsr     press_continue  Pause to get input
     bsr     clear_screen    Clear the screen
+    bsr     endl            Break to new line
+    bsr     draw_castle     Draw a castle
+    bsr     endl            Break to new line
     move.b  #64,GAME_STATE  Set the game state to end game
     bra     replay          Give the player the option to restart or quit
 
@@ -571,8 +574,13 @@ draw_graveyard:
     lea     graveyard_msg,A1 Load the graveyard message
     move.b  #14,D0           Move literal 14 for display message trap command
     trap    #15              Display the loaded message
-    
-    rts
+    rts                      Return from the subroutine
+
+draw_castle:
+    lea     castle_msg,A1   Load the castle message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    rts                     Return from the subroutine
     
 draw_merchant:
     lea     merchant_msg,A1  Load the merchant message
@@ -1996,7 +2004,8 @@ setup_player:
     move.b  #100,PLA_GOLD    Assign the player's base gold value
     move.b  #1,PLA_POTIONS  Assign the player's base potions value
     move.b  #0,PLA_KEYS     Assign the player's base keys value
-    move.b  #LIFE_PER_TORCH,PLA_TORCH   Assign the player's base torch value
+    *move.b  #LIFE_PER_TORCH,PLA_TORCH   Assign the player's base torch value
+    move.b  #50,PLA_TORCH   Assign the player's base torch value
     
     lea     $814A,A6        Set the player coordinate to the first corridor
     move.w  A6,PLA_P_POS    Set the player's previous position to their current
@@ -2172,8 +2181,40 @@ merchant_msg:   dc.b    '         ____',$0D,$0A
                 dc.b    ' ||   :   .      \.',$0D,$0A
                 dc.b    ' ||   :  : :      :',$0D,$0A
                 dc.b    ' ||   :__:-:__.;--',$0D,$0A,0
+castle_msg:     dc.b    '                T~~',$0D,$0A
+                dc.b    '                |',$0D,$0A
+                dc.b    '               /"\',$0D,$0A
+                dc.b    '       T~~     |.| T~~',$0D,$0A
+                dc.b    '   T~~ |    T~ WWWW|',$0D,$0A
+                dc.b    '   |  /"\   |  |  |/\T~~',$0D,$0A
+                dc.b    '  /"\ WWW  /"\ |. |WW|',$0D,$0A
+                dc.b    ' WWWWW/\| /   \|./\|/"\',$0D,$0A
+                dc.b    ' |   /__\/]WWW[\/__\WWWW',$0D,$0A
+                dc.b    ' |"  WWWW.|I_I|.WWWW.   |',$0D,$0A
+                dc.b    ' |   |. |/  -  \|. |.  |',$0D,$0A
+                dc.b    ' |.  |  |LI=H=LI|. |   |',$0D,$0A
+                dc.b    ' |   |. | |[_]| |  |.  |',$0D,$0A
+                dc.b    ' |   |  |_|###|_|  |   |',$0D,$0A
+                dc.b    '  --- -- -/___\- -- --- ',$0D,$0A,0
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     end start
+
 
 
 
