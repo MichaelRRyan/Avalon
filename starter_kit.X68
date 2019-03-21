@@ -19,14 +19,17 @@
 *-------------------------------------------------------
 *A6 is used for player coordinates
 *A5 is used for enemy coordinates when in combat or looping through them
+*A5 is used for shops when in shop screen or when looping through them
 *A4 occasionally used for displaying the inventory
 *D5 is used occasionally for input range
 *$5000 to $5FE0 holds maps
 *$5FF0 holds player information
-*$6000 to $7000 holds enemies
+*$6000 to $64F0 holds enemies
+*$6500 to $6FF0 holds shops
+*$7000 to $7500 holds loot
 
 *Enemies:
-*Byte:  Name
+*Byte:  Name:
 *0      Health
 *1      Damage/level
 *2      enemy type (Knight, mage, rogue)
@@ -34,7 +37,7 @@
 *4 & 5  Coordinates
 
 *Player:
-*Byte:  Name
+*Byte:  Name:
 *0      Health
 *1      Damage/level
 *2      Class (Knight, mage, rogue)
@@ -45,8 +48,17 @@
 *9      Potions
 *A      Keys
 *B      Torch life
+
+*Shops:
+*Byte:  Name:
+*0-1    Position
+*2      Potions
+*3      Keys
+*4      Torches
+*5      Damage increase
+
     
-*Game state : 0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
+*Game state : 0 = Pick role/intro | 5 = Move around | 6 = Combat | 7 = Shop | 64 = End game
 *Class      : 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
 
 
@@ -56,15 +68,15 @@
 *-------------------------------------------------------
 exit        EQU 0      used to exit assembly program
 
-FIRST_ENEMY EQU $6000
-ENEMY_MAX   EQU 2           Number of enemies in the game
-
+* Text display
 RED         EQU $000000FF   Red colour value
 GREEN       EQU $0000FF00   Green colour value
 BLUE        EQU $00FF0000   Blue colour value
 WHITE       EQU $00FFFFFF   White colour value
+PURPLE      EQU $00F000F0   Purple colour value
 FONT        EQU $01090000   Font value
 
+* Player
 PLAYER      EQU $5FF0       Memory address for player information and health
 PLA_DAMAGE  EQU $5FF1       Memory address for player damage value
 PLA_CLASS   EQU $5FF2       The memory address for the player class
@@ -75,14 +87,31 @@ PLA_POTIONS EQU $5FF9       Memory address for player potions
 PLA_KEYS    EQU $5FFA       Memory address for player keys
 PLA_TORCH   EQU $5FFB       Memory address for player torch life
 
-DAMAGE      EQU 1           The number of bytes to move from the charater before reaching the damage
-CLASS       EQU 2           The number of bytes to move from the charater before reaching the class
-ALIVE       EQU 3           The number of bytes to move from the charater before reaching the alive state
-POSITION    EQU 4           The number of bytes to move from the charater before reaching the position
+* Enemy
+FIRST_ENEMY EQU $6000       Memory location of the first enemy
+ENEMY_MAX   EQU 2           Number of enemies in the game
 
+DAMAGE      EQU 1           The number of bytes to move from the enemy before reaching the damage
+CLASS       EQU 2           The number of bytes to move from the enemy before reaching the class
+ALIVE       EQU 3           The number of bytes to move from the enemy before reaching the alive state
+POSITION    EQU 4           The number of bytes to move from the enemy before reaching the position
+
+* Shop
+FIRST_SHOP  EQU $6500       Memory location of the first shop
+SHOP_MAX    EQU 2           Number of shops in the game
+
+S_POTIONS   EQU 2           The number of bytes to move from the shop root before reaching the potions
+S_KEYS      EQU 3           The number of bytes to move from the shop root before reaching the keys
+S_TORCHES   EQU 4           The number of bytes to move from the shop root before reaching the torches
+S_DAMAGE_IN EQU 5           The number of bytes to move from the shop root before reaching the damage increase
+
+* HUD
 CSR_POS_MOVE    EQU $3201   The cursor position to draw the HUD to when in movement state
 CSR_POS_BATTLE  EQU $2001   The cursor position to draw the HUD to when in battle state
+CSR_POS_SHOP_S  EQU $1801   The cursor position to draw the HUD to when in shop state for shop info
+CSR_POS_SHOP_P  EQU $3401   The cursor position to draw the HUD to when in shop state for player info
 
+* Game
 WIN_POINT   EQU $5156       The position the player has to get to to win
 
 
@@ -91,6 +120,7 @@ start:
     bsr     setup_player
     bsr     setup_world
     bsr     setup_enemies
+    bsr     setup_shops
 
     bsr     welcome    branch to the welcome subroutine
     bsr     press_continue
@@ -213,8 +243,6 @@ manage_input:
     
     CMP.B   #0,GAME_STATE   Check which state the game is in
     BEQ     role_input      Branch to the manage input for the role picking
-    CMP.B   #5,GAME_STATE   Check which state the game is in
-    BEQ     wall_collisions Branch to the manage input for the movement
     
     rts                     Return out of subroutine
 
@@ -248,12 +276,14 @@ update:
     BEQ     won_game            Branch to the won game subroutine
 
     CMP.B   #5,GAME_STATE       Check which state the game is in
-    BEQ     enemies_check       Check for enemies if in movement state
+    BEQ     movement_checks     Check for enemies and shops if in movement state
     CMP.B   #6,GAME_STATE       Check which state the game is in
     BEQ     enemy_alive_check   Check if enemy is dead if in combat
     
     rts
     
+*-------------------------------------------------------
+*---------------------Win or Lose----------------------- 
 player_dead:
     bsr     endl            Break to new line
     
@@ -263,6 +293,8 @@ player_dead:
 
     bsr     press_continue  Pause to get input
     bsr     clear_screen    Clear the screen
+    bsr     draw_graveyard  Draw a graveyard
+    bsr     endl            Break to new line
     move.b  #64,GAME_STATE  Set the game state to end game
     bra     replay          Give the player the option to restart or quit
     
@@ -278,8 +310,15 @@ won_game:
     move.b  #64,GAME_STATE  Set the game state to end game
     bra     replay          Give the player the option to restart or quit
 
+*-------------------------------------------------------
+*--------------------Movement State--------------------- 
+movement_checks:
+    bsr     enemies_check   Check for enemies beside the player
+    bsr     shops_check     Check for shops beside the player
+    
+    rts
 
-
+*--------------------Enemy Checking--------------------- 
 enemies_check:
     lea     FIRST_ENEMY,A5  Load the memory address of the first enemy
     move.b  #0,D5           Move the starting enemy number to D5
@@ -343,7 +382,68 @@ enter_combat:
     bsr     draw_battle_info    Draw the info
     
     rts
+      
+*--------------------Shop Checking----------------------
+shops_check:
+    lea     FIRST_SHOP,A5   Load the memory address of the first shop
+    move.b  #0,D5           Move the starting shop number to D5
+    bsr     shops_loop      Loop through all shops
+    rts                     Return from subroutine
     
+shops_loop:
+    bsr     shop_check      Check for a shop
+    
+    CMP.B   #SHOP_MAX,D5    Compare the shop number with the maximum shop number
+    BGE     return          Return from the loop if the current shop number is greater than or equal to the max
+    CMP.B   #5,GAME_STATE   Compare the movement gamestate number with the current gamestate
+    BNE     return          Return from the loop if the game is not in the movement state anymore
+    
+    add.b   #1,D5           Add to the current shop number
+    add.w   #16,A5          Add to the current shop pointer to move to the next shop
+    bra     shops_loop      Keep looping the shops
+    
+shop_check:    
+    move.w  A6,D2           Move the player position to D2
+    
+    *Check if the player is beside a shop
+    sub.w   #16,D2          Check north
+    CMP.W   (A5),D2           
+    BEQ     enter_shop      The player enters a shop
+    
+    add.w   #32,D2          Check south
+    CMP.W   (A5),D2           
+    BEQ     enter_shop      The player enters a shop
+    
+    sub.w   #17,D2          Check west
+    CMP.W   (A5),D2           
+    BEQ     enter_shop      The player enters a shop
+    
+    add.w   #2,D2           Check east
+    CMP.W   (A5),D2           
+    BEQ     enter_shop      The player enters a shop
+    
+    rts     Return if not touching a shop
+    
+enter_shop:
+    move.b  #7,GAME_STATE       Move to shop game state
+    
+    bsr     endl                Line break
+    
+    LEA     shop_enter_msg,A1   Load the encounter message int A1
+    move.b  #14,D0              Move #14 to D0 to display message
+    trap    #15                 Display the loaded message
+    
+    bsr     press_continue      Branch to the press to continue subroutine
+    
+    bsr     clear_screen        Clear the screen
+    
+    bsr     draw_merchant       Draw the merchant
+    bsr     draw_shop_info      Draw the info
+    
+    rts
+
+*-------------------------------------------------------
+*---------------------Combat State---------------------- 
 enemy_alive_check:
     CMP.B   #0,(A5)     Compare the enemy health with zero
     BLE     enemy_died  If the enemy health is zero or below, they died
@@ -379,6 +479,8 @@ draw:
     BEQ     draw_loop       If in the movement state, draw the map
     CMP.B   #6,GAME_STATE   Check which state the game is in
     BEQ     draw_skeleton   If in the combat state, draw the enemy
+    CMP.B   #7,GAME_STATE   Check which state the game is in
+    BEQ     draw_merchant   If in the shop state, draw the enemy
     rts
     
 draw_skeleton:
@@ -388,11 +490,27 @@ draw_skeleton:
     
     rts
     
+draw_graveyard:
+    lea     graveyard_msg,A1 Load the graveyard message
+    move.b  #14,D0           Move literal 14 for display message trap command
+    trap    #15              Display the loaded message
+    
+    rts
+    
+draw_merchant:
+    lea     merchant_msg,A1  Load the merchant message
+    move.b  #14,D0           Move literal 14 for display message trap command
+    trap    #15              Display the loaded message
+    
+    rts
+    
 draw_hud:
     CMP.B   #5,GAME_STATE       Check which state the game is in
     BEQ     draw_player_info    If in the movement state, draw the player info
     CMP.B   #6,GAME_STATE       Check which state the game is in
-    BEQ     draw_battle_info     If in the combat state, draw the combat info
+    BEQ     draw_battle_info    If in the combat state, draw the combat info
+    CMP.B   #7,GAME_STATE       Check which state the game is in
+    BEQ     draw_shop_info      If in the shop state, draw the shop info
     
     rts
 
@@ -543,6 +661,173 @@ draw_battle_info:
     move.b  #3,D0           Move literal 3 for display number trap command
     trap    #15             Display the number in D1
     
+    * Move the cursor to draw potion information
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_BATTLE,D1
+    add.w   #3,D1
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     potions_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    lea     PLA_POTIONS,A4
+    bsr     draw_item_number
+    
+    * Move the cursor back to its previous position
+    move.w  D3,D1           Move the previous cursor position back to D1
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11          
+    trap    #15             Set the cursor position with trap command 11
+    
+    clr     D1              Clear D1 for later use
+    
+    rts
+    
+draw_shop_info:
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
+    
+    move.w  D1,D3           Move the current cursor position to D3 for later
+    
+    * Move cursor to draw shop info
+    move.w  #CSR_POS_SHOP_S,D1           
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     shop_stock_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    
+    * Display the shop's potions
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_S,D1         
+    add.w   #1,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     potions_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    add.w   #S_POTIONS,A5
+    lea     (A5),A4
+    bsr     draw_item_number
+    
+    * Display the shop's keys
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_S,D1         
+    add.w   #2,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     key_msg,A1      Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    add.w   #1,A5
+    lea     (A5),A4
+    bsr     draw_item_number
+    
+    * Display the shop's torches
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_S,D1         
+    add.w   #3,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     torches_msg,A1  Load the torches message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    add.w   #1,A5
+    lea     (A5),A4
+    bsr     draw_item_number
+    
+    * Display the shop's damage upgrades
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_S,D1         
+    add.w   #4,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     damage_up_msg,A1 Load the damage upgrades message
+    move.b  #14,D0           Move literal 14 for display message trap command
+    trap    #15              Display the loaded message
+    
+    add.w   #1,A5
+    lea     (A5),A4
+    bsr     draw_item_number
+    
+    * Display the inventory
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_P,D1       
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     inventory_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    * Display the player gold
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_P,D1         
+    add.w   #1,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     gold_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    lea     PLA_GOLD,A4
+    bsr     draw_item_number
+    
+    * Display the player potions
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_P,D1         
+    add.w   #2,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     potions_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    lea     PLA_POTIONS,A4
+    bsr     draw_item_number
+    
+    * Display the player keys
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_P,D1         
+    add.w   #3,D1  
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     key_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    lea     PLA_KEYS,A4
+    bsr     draw_item_number
+    
+    * Display the torch life
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_P,D1
+    add.w   #5,D1       
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     torch_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    move.b  PLA_TORCH,D1    Move the player torch life value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
     * Move the cursor back to its previous position
     move.w  D3,D1           Move the previous cursor position back to D1
     move.b  #11,D0          Move the byte #11 to D0 for trap command 11          
@@ -563,6 +848,8 @@ gameplay:
     BEQ     movement        Branch to the movement subroutine
     CMP.B   #6,GAME_STATE   Check which stage the game is in
     BEQ     combat          branch to the combat subroutine
+    CMP.B   #7,GAME_STATE   Check which stage the game is in
+    BEQ     shop            branch to the shop subroutine
     rts                     Return from 'gameplay' subroutine
 
 *-------------------------------------------------------
@@ -619,9 +906,14 @@ movement:
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
 
-    move.l  #4,D5           Move the number 4 to D5 to tell the program how many options there are
+    move.l  #5,D5           Move the number 4 to D5 to tell the program how many options there are
     
     bsr     input           branch to the input subroutine
+    bsr     wall_collisions Branch to check wall collisions and movement
+    
+    CMP.B   #5,D1           Check the input against taking a potion
+    BEQ     take_potion     Branch to take a potion
+    
     rts
 
 *-------------------------------------------------------
@@ -753,18 +1045,19 @@ combat:
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
 
-    move.l  #4,D5           Move the number 4 to D5 to tell the program how many options there are
-    
+    move.l  #5,D5           Move the number 4 to D5 to tell the program how many options there are
     bsr     input           branch to the input subroutine
     
     CMP.B   #1,D1           Compare input with number literal 1
     BEQ     block_counter   Branch to block/counter subroutine
-    CMP.B   #2,D1           Compare input with number literal 1
+    CMP.B   #2,D1           Compare input with number literal 2
     BEQ     cast_magic      Branch to cast magic subroutine
-    CMP.B   #3,D1           Compare input with number literal 1
+    CMP.B   #3,D1           Compare input with number literal 3
     BEQ     melee_attack    Branch to melee subroutine
-    CMP.B   #4,D1           Compare input with number literal 1
+    CMP.B   #4,D1           Compare input with number literal 4
     BEQ     try_run         Branch to try run subroutine
+    CMP.B   #5,D1           Compare input with number literal 5
+    BEQ     take_potion     Branch to take potion subroutine
     
     rts
     
@@ -930,6 +1223,45 @@ hit_by_melee:
     rts
 
 *-------------------------------------------------------
+*----------------------Shop State-----------------------
+*-------------------------------------------------------
+shop:
+    lea     shop_msg,A1     Load the shop message
+    move.b  #14,D0          Move the number literal 14 to D0 for trap command
+    trap    #15             Display the loaded message
+
+    move.l  #5,D5           Move the number 4 to D5 to tell the program how many options there are
+    bsr     input           branch to the input subroutine
+    
+    CMP.B   #1,D1           Compare input with number literal 1
+    BEQ     buy_potion      Branch to buy potion subroutine
+    CMP.B   #2,D1           Compare input with number literal 2
+    BEQ     buy_key         Branch to buy key subroutine
+    CMP.B   #3,D1           Compare input with number literal 3
+    BEQ     buy_torch       Branch to buy torch subroutine
+    CMP.B   #4,D1           Compare input with number literal 4
+    BEQ     upgrade_dmg     Branch to buy damage upgrade subroutine
+    CMP.B   #5,D1           Compare input with number literal 5
+    BEQ     leave_shop      Branch to leave shop subroutine
+
+    rts
+    
+buy_potion:
+    rts
+    
+buy_key:
+    rts
+    
+buy_torch:
+    rts
+    
+upgrade_dmg:
+    rts
+    
+leave_shop:
+    rts
+
+*-------------------------------------------------------
 *-------------------Misc Subroutines--------------------
 *-------------------------------------------------------
 press_continue:
@@ -958,6 +1290,30 @@ random_number:              *Psuedo random number generator, courtesy of Pádraig
 return:   *Subroutine to branch to to break out of a subroutine when a condition is met
     rts
     
+take_potion:
+    CMP.B   #0,PLA_POTIONS      Check if the player has potions to drink
+    BLE     no_potions          If the potions are zero or below branch to no_potions
+    
+    add.b   #3,PLAYER           Add 3 to the player's health
+    sub.b   #1,PLA_POTIONS      Remove one potion
+    
+    lea     take_potion_msg,A1  Load the take potion message
+    move.b  #14,D0              Move the number literal 14 to D0 for trap command
+    trap    #15                 Display the loaded message
+    
+    bsr     press_continue      Wait for player input
+    
+    rts                         Return from subroutine
+
+no_potions:
+    lea     no_potions_msg,A1   Load the no potions message
+    move.b  #14,D0              Move the number literal 14 to D0 for trap command
+    trap    #15                 Display the loaded message
+    
+    bsr     press_continue      Wait for player input
+    
+    rts                         Return from subroutine
+    
 *-------------------------------------------------------
 *----------------------Draw loop------------------------
 *-------------------------------------------------------
@@ -972,7 +1328,7 @@ draw_loop:
     
 loop_rows:
     CMP     #22,D6          Check the rows don't go out of bounds
-    BGT     return        If the rows are greater than 22 end the loop
+    BGT     return          If the rows are greater than 22 end the loop
     
     move.b  #0,D7           Reset to column 0
     bsr     loop_columns    Loop for every column
@@ -984,12 +1340,13 @@ loop_rows:
     
 loop_columns:
     CMP.B   #15,D7              Check the rows don't go out of bounds
-    BGT     return            If the rows are greater than 22 end the loop
+    BGT     return              If the rows are greater than 22 end the loop
     
     bsr     draw_tile           Draw the current tile
     bsr     check_for_player    Draw the player in the current tile if they're there
     bsr     check_for_enemies   Draw an enemy in the current tile if they is one there
     bsr     check_for_win_point Draw the win point in the current tile if it's there
+    bsr     check_for_shops     Draw a shop in the current tile if there is one
     
     add.b   #1,D7               Add to the column count
     add     #1,A2               Move to the next memory location
@@ -1153,12 +1510,67 @@ draw_enemy:
     move.b  #11,D0          Move byte #11 for trap command 11 
     trap    #15             Set the cursor position
     
-    rts
+    rts 
     
-check_for_win_point:
-    CMP.W   #WIN_POINT,A2
-    BEQ     draw_win_point
+check_for_shops:
+    lea     FIRST_SHOP,A5   Load the memory address of the first shop
+    move.b  #0,D5           Move the starting shop number to D5
+    bsr     loop_shops      Loop through all shops
+    rts                     Return from subroutine
+    
+loop_shops:
+    bsr     check_for_shop  Check for a shop
+    
+    CMP.B   #SHOP_MAX,D5    Compare the shop number with the maximum shop number
+    BGE     return          Return from the loop if the current shop number is greater than or equal to the max
+    
+    add.b   #1,D5           Add to the current shop number
+    add.w   #16,A5          Add to the current shop pointer to move to the next shop
+    bra     loop_shops      Keep looping the shops
+    
+check_for_shop:
+    CMP.W   (A5),A2         Check if the shop is in the current position
+    BEQ     draw_shop       Draw the shop if it is
+    rts                     Return if the shop is not in the current position
+    
+draw_shop:
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
+    
+    sub.w   #512,D1         Move the cursor back by two columns
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  D1,D3           Move the value in D1 to D3 for storage
+    
+    move.b  #21,D0          Move #21 to D0 for trap command 21
+    move.l  #PURPLE,D1      Move the colour red to D1
+    move.l  #FONT,D2        Move the font to D2
+    trap    #15             Set the colour
+    
+    lea     shop_mark,A1    load the enemy symbol
+    move.b  #14,D0          Move #14 to D0 for trap command 14
+    trap    #15             Draw the player mark
+    
+    move.b  #21,D0          Move #21 to D0 for trap command 21
+    move.l  #WHITE,D1       Move the colour white to D1
+    trap    #15             Set the colour
+    
+    clr.l   D1              Clear D1 for later use
+    clr.l   D2              Clear D2 for later use
+    
+    move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
+    
+    add.w   #512,D1         Move the cursor position two columns forward
+    move.b  #11,D0          Move byte #11 for trap command 11 
+    trap    #15             Set the cursor position
+    
     rts
+
+check_for_win_point:
+    CMP.W   #WIN_POINT,A2   Check if the win point is in the current tile
+    BEQ     draw_win_point  Branch to draw the win point if so
+    rts                     Return from subroutine if not
     
 draw_win_point:
     move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
@@ -1333,24 +1745,38 @@ setup_enemies:
     
 setup_player:
     move.b  #10,PLAYER      put score/health in memory location $5FF0
-    *lea     $5FF0,A3   assign address A3 to that memory location
-    
     move.b  #1,PLA_DAMAGE   Assign the default damage for the player
-    
     move.b  #0,GAME_STATE   Put game state number in memory location $5FF3
-    *0 = Pick role/intro | 5 = Move around | 6 = Combat | 10 to 20 = Shop | 64 = End game
+    *0 = Pick role/intro | 5 = Move around | 6 = Combat | 7 = Shop | 64 = End game
 
     move.b  #0,PLA_CLASS    put class number in memory location $5FF2
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
-    move.b  #15,PLA_GOLD
-    move.b  #1,PLA_POTIONS
-    move.b  #0,PLA_KEYS
-    move.b  #15,PLA_TORCH
+    move.b  #15,PLA_GOLD    Assign the player's base gold value
+    move.b  #1,PLA_POTIONS  Assign the player's base potions value
+    move.b  #0,PLA_KEYS     Assign the player's base keys value
+    move.b  #15,PLA_TORCH   Assign the player's base torch value
     
     lea     $514A,A6        Set the player coordinate to the first corridor
     move.w  A6,PLA_P_POS    Set the player's previous position to their current
     
+    rts
+    
+setup_shops:
+    * Setup the first shop
+    move.w  #$50F9,$6500    Set the position
+    move.b  #2,$6502        Set the potions
+    move.b  #3,$6503        Set the keys
+    move.b  #4,$6504        Set the torches
+    move.b  #5,$6505        Set the damage
+    
+    * Setup the second shop
+    move.w  #$50B2,$6510    Set the position
+    move.b  #4,$6512        Set the potions
+    move.b  #3,$6513        Set the keys
+    move.b  #2,$6514        Set the torches
+    move.b  #1,$6515        Set the damage
+
     rts
     
 *-------------------------------------------------------
@@ -1392,7 +1818,8 @@ rogue_role_msg: dc.b    'You fasten your belt, grab a torch from the wall, and l
 movement_msg:   dc.b    '1> Move north.',$0D,$0A
                 dc.b    '2> Move south.',$0D,$0A
                 dc.b    '3> Move west.',$0D,$0A
-                dc.b    '4> Move east.',$0D,$0A,0
+                dc.b    '4> Move east.',$0D,$0A
+                dc.b    '5> Drink health potion.',$0D,$0A,0
 move_north_msg: dc.b    'Moved north.',$0D,$0A,0
 move_east_msg:  dc.b    'Moved east.',$0D,$0A,0
 move_south_msg: dc.b    'Moved south.',$0D,$0A,0
@@ -1408,25 +1835,13 @@ blocked_tile:   dc.b    '\/\',0
 player_mark:    dc.b    '*',0
 enemy_mark:     dc.b    'X',0
 win_point_mark: dc.b    '@',0
+shop_mark:      dc.b    '$',0
 encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
 combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
                 dc.b    '2> Cast Magic.',$0D,$0A
                 dc.b    '3> Attack Swiftly.',$0D,$0A
-                dc.b    '4> Try Run.',$0D,$0A,0
-skeleton_msg:   dc.b    '           .-.     ',$0D,$0A
-                dc.b    ' /\____/\ (o.o)    ',$0D,$0A
-                dc.b    '|  _||_  | |=|     ',$0D,$0A
-                dc.b    ' \/ || \/ __|__    ',$0D,$0A
-                dc.b    '    ||\_//.=|=.\\  ',$0D,$0A
-                dc.b    '    ||\_/ .=|=. \\ ',$0D,$0A
-                dc.b    '    ||    .=|=. // ',$0D,$0A
-                dc.b    '    ||    (_=_)//  ',$0D,$0A
-                dc.b    '    ||   (:| |:)   ',$0D,$0A
-                dc.b    '    ||    || ||    ',$0D,$0A
-                dc.b    '    ||    () ()    ',$0D,$0A
-                dc.b    '    /\    || ||    ',$0D,$0A
-                dc.b    '    ||    || ||    ',$0D,$0A
-                dc.b    '    \/  ==   ==    ',$0D,$0A,0
+                dc.b    '4> Try Run.',$0D,$0A
+                dc.b    '5> Drink Health Potion.',$0D,$0A,0
 escape_msg:             dc.b    'You escaped the monster!',$0D,$0A,0
 fail_escape_msg:        dc.b    'You try to run, but the monster catches and damages you!',$0D,$0A,0
 both_block_msg:         dc.b    'You both block, No damage is done!',$0D,$0A,0
@@ -1449,17 +1864,65 @@ torch_msg:              dc.b    'Torch Life: ',0
 inventory_msg:          dc.b    'Inventory:',0
 gold_msg:               dc.b    '- Gold ',0
 key_msg:                dc.b    '- Key ',0
-potions_msg:            dc.b    '- potion ',0
+potions_msg:            dc.b    '- Potion ',0
+torches_msg:            dc.b    '- Torch ',0
+damage_up_msg:          dc.b    '- Damage Upgrades ',0
 battle_won_msg:         dc.b    'The monster collapses at your feet. It is dead!',$0D,$0A,0
 bracket_open_msg:       dc.b    '(',0
 bracket_close_msg:      dc.b    ')',0
 death_msg:          dc.b    'You feel your last breath of air leave your lungs...',$0D,$0A
                     dc.b    'Your knees hit the ground...',$0D,$0A
                     dc.b    'You have died.',$0D,$0A,0
-win_msg             dc.b    'You feel the outside breeze hit your face...',$0D,$0A
+win_msg:            dc.b    'You feel the outside breeze hit your face...',$0D,$0A
                     dc.b    'You have escaped the castle!',$0D,$0A,0
+take_potion_msg:    dc.b    'You drink a health potion...',$0D,$0A
+                    dc.b    '3 health points restored!',$0D,$0A,0
+no_potions_msg:     dc.b    'You are out of potions.',$0D,$0A,0
+shop_enter_msg:     dc.b    '"Looking to lighten that coin pouch of yours?!"',$0D,$0A,0
+shop_msg:       dc.b    '1> Buy Potion.',$0D,$0A
+                dc.b    '2> Buy Key.',$0D,$0A
+                dc.b    '3> Buy Torch.',$0D,$0A
+                dc.b    '4> Buy Damage Upgrade.',$0D,$0A
+                dc.b    '5> Leave Shop.',$0D,$0A,0
+shop_stock_msg: dc.b    'Shop Stock:',0
+player_msg:     dc.b    'Your Items:',0
+graveyard_msg   dc.b    '      ,-=-.       ______     _',$0D,$0A
+                dc.b    '     /  +  \     />----->  _|1|_',$0D,$0A
+                dc.b    '     | ~~~ |    // -/- /  |_ H _|',$0D,$0A
+                dc.b    '     |R.I.P|   //  /  /     |S|',$0D,$0A
+                dc.b    '\vV,,|_____|V,//_____/VvV,v,|_|/,,vhjwv/,',$0D,$0A,0
+skeleton_msg:   dc.b    '           .-.',$0D,$0A
+                dc.b    ' /\____/\ (o.o)',$0D,$0A
+                dc.b    '|  _||_  | |=|',$0D,$0A
+                dc.b    ' \/ || \/ __|__',$0D,$0A
+                dc.b    '    ||\_//.=|=.\\',$0D,$0A
+                dc.b    '    ||\_/ .=|=. \\',$0D,$0A
+                dc.b    '    ||    .=|=. //',$0D,$0A
+                dc.b    '    ||    (_=_)//',$0D,$0A
+                dc.b    '    ||   (:| |:)',$0D,$0A
+                dc.b    '    ||    || ||',$0D,$0A
+                dc.b    '    ||    () ()',$0D,$0A
+                dc.b    '    /\    || ||',$0D,$0A
+                dc.b    '    ||    || ||',$0D,$0A
+                dc.b    '    \/  ==   ==',$0D,$0A,0
+merchant_msg:   dc.b    '         ____',$0D,$0A
+                dc.b    '        |    |',$0D,$0A
+                dc.b    '      --:<<>>:--',$0D,$0A
+                dc.b    '        :~_~ :',$0D,$0A
+                dc.b    '        _:"":\___',$0D,$0A
+                dc.b    '  ____./ :::     \._',$0D,$0A
+                dc.b    '<<=)           \    :',$0D,$0A
+                dc.b    ' \/---/\_      /\._. ',$0D,$0A
+                dc.b    ' ||       \====:_ ""',$0D,$0A
+                dc.b    ' ||      ./     \\',$0D,$0A
+                dc.b    ' ||     :       :',$0D,$0A
+                dc.b    ' ||    /   :    \',$0D,$0A
+                dc.b    ' ||   :   .      \.',$0D,$0A
+                dc.b    ' ||   :  : :      :',$0D,$0A
+                dc.b    ' ||   :__:-:__.;--',$0D,$0A,0
 
     end start
+
 
 
 
