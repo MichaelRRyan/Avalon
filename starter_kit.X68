@@ -24,7 +24,9 @@
 *D5 is used occasionally for input range
 *$5FF0 holds player information
 *$6000 to $64F0 holds enemies
-*$6500 to $6FF0 holds shops
+*$6500 to $6FE0 holds shops
+*$6FE0 to $6FEF Holds locked doors
+*$6FF0 to $6FFF Holds big key locked doors
 *$7000 to $7500 holds loot
 *$8000 to $9000 holds maps
 
@@ -83,6 +85,7 @@ BLUE        EQU $00FF0000   Blue colour value
 WHITE       EQU $00FFFFFF   White colour value
 PURPLE      EQU $00F000F0   Purple colour value
 GOLD        EQU $0000FFFF   Purple colour value
+MAROON      EQU $00000080   Maroon colour value
 FONT        EQU $01090000   Font value
 
 * Player
@@ -124,7 +127,10 @@ CSR_POS_SHOP_S  EQU $1801   The cursor position to draw the HUD to when in shop 
 CSR_POS_SHOP_P  EQU $3401   The cursor position to draw the HUD to when in shop state for player info
 
 * Game
-WIN_POINT   EQU $8156       The position the player has to get to to win
+WIN_POINT       EQU $8156   The position the player has to get to to win
+FIRST_DOOR      EQU $6FE0   The memory location of the first locked door
+MAX_DOORS       EQU 1       The number of locked doors in the game
+OPEN_DOOR_POS   EQU $1000   The position doors are given when opened
 
 POTION_PRICE    EQU 5       The price in gold for a potion
 KEY_PRICE       EQU 15      The price in gold for a key
@@ -2191,6 +2197,9 @@ setup_world:
     move.b  #9,$8155
     move.b  #5,$8156
     
+    * Setup the doors
+    move.w  $8139,FIRST_DOOR    Set the location of the first door
+    
     rts
 
 setup_enemies:
@@ -2328,6 +2337,7 @@ enemy_mark:     dc.b    'X',0
 win_point_mark: dc.b    '@',0
 shop_mark:      dc.b    '$',0
 loot_mark:      dc.b    '%',0
+door_mark:      dc.b    '#',0
 encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
 combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
                 dc.b    '2> Cast Magic.',$0D,$0A
@@ -2457,6 +2467,7 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
 
 
     end start
+
 
 
 
