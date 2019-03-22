@@ -63,7 +63,8 @@
 *2      Potions
 *3      Keys
 *4      Torches
-*5      Active State
+*5      Gold
+*6      Active State
     
 *Game state : 0 = Pick role/intro | 5 = Move around | 6 = Combat | 7 = Shop | 64 = End game
 *Class      : 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
@@ -114,7 +115,7 @@ S_TORCHES   EQU 4           The number of bytes to move from the shop root befor
 S_DAMAGE_IN EQU 5           The number of bytes to move from the shop root before reaching the damage increase
 
 FIRST_LOOT  EQU $7000       Memory location of the first loot pile
-L_ACTIVE    EQU 5           The number of bytes to move from the loot pile root before reaching the active state
+L_ACTIVE    EQU 6           The number of bytes to move from the loot pile root before reaching the active state
 
 * HUD
 CSR_POS_MOVE    EQU $3201   The cursor position to draw the HUD to when in movement state
@@ -226,7 +227,7 @@ knight_select:
     bra     tutorial_intro      Branch to tutorial subroutine
 
 mage_select:
-    lea     mage_role_msg,A1 a  ssign message to address register A1
+    lea     mage_role_msg,A1    Assign message to address register A1
     move.b  #14,D0              move literal 14 to DO
     trap    #15                 Display the mage message
     
@@ -412,7 +413,7 @@ loot_pile_check:
     BEQ     return          Return if not active
 
     move.w  (A5),D2         Move the loot pile position to D2 for large value comparison
-    CMP.L   D2,A6         Check if the player is on a loot pile   
+    CMP.L   D2,A6           Check if the player is on a loot pile   
     BEQ     pickup_loot     Pickup the loot
     
     rts     Return if not touching a loot pile
@@ -427,21 +428,60 @@ pickup_loot:
     move.b  #14,D0              Move #14 to D0 to display message
     trap    #15                 Display the loaded message
     
-    move.l  #WHITE,D1           Load the white colour
-    bsr     change_font_colour  Change the font colour
-    
     add.w   #S_POTIONS,A5       Move to potions number
-    move.b  (A5)+,D1            Move the loot potions number to D1 and increment
+    move.b  (A5),D1            Move the loot potions number to D1 and increment
     add.b   D1,PLA_POTIONS      Give the player the number of potions in the loot
     
-    move.b  (A5)+,D1            Move the key number to D1 and increment
+    LEA     pickup_potion_msg,A1  Load the pickup potions message into A1
+    move.b  #14,D0              Move #14 to D0 to display message
+    trap    #15                 Display the loaded message
+    
+    move.w  A5,A4               Move the item number to A4 to draw it
+    bsr     draw_item_number    Draw the item number
+    bsr     endl                Break to new line
+    add.w   #1,A5               Move to the next item in the loot pile
+    
+    move.b  (A5),D1             Move the key number to D1 and increment
     add.b   D1,PLA_KEYS         Give the player the number of keys in the loot
     
-    move.b  (A5)+,D1            Move the torch number to D1 and increment
+    LEA     pickup_key_msg,A1   Load the pickup key message into A1
+    move.b  #14,D0              Move #14 to D0 to display message
+    trap    #15                 Display the loaded message
+    
+    move.w  A5,A4               Move the item number to A4 to draw it
+    bsr     draw_item_number    Draw the item number
+    bsr     endl                Break to new line
+    add.w   #1,A5               Move to the next item in the loot pile
+    
+    move.b  (A5),D1             Move the torch number to D1 and increment
     add.b   D1,PLA_TORCH        Give the player the number of torches in the loot
+    
+    LEA     pickup_torch_msg,A1 Load the pickup torch message into A1
+    move.b  #14,D0              Move #14 to D0 to display message
+    trap    #15                 Display the loaded message
+    
+    move.w  A5,A4               Move the item number to A4 to draw it
+    bsr     draw_item_number    Draw the item number
+    bsr     endl                Break to new line
+    add.w   #1,A5               Move to the next item in the loot pile
+    
+    move.b  (A5),D1             Move the torch number to D1 and increment
+    add.b   D1,PLA_GOLD         Give the player the number of gold in the loot
+    
+    LEA     pickup_gold_msg,A1  Load the pickup gold message int A1
+    move.b  #14,D0              Move #14 to D0 to display message
+    trap    #15                 Display the loaded message
+    
+    move.w  A5,A4               Move the item number to A4 to draw it
+    bsr     draw_item_number    Draw the item number
+    bsr     endl                Break to new line
+    add.w   #1,A5               Move to the next item in the loot pile
     
     move.b  #0,(A5)             Set the loot to not active
     sub.w   #L_ACTIVE,A5        Move to active state
+    
+    move.l  #WHITE,D1           Load the white colour
+    bsr     change_font_colour  Change the font colour
     
     rts
 
@@ -1222,6 +1262,7 @@ combat:
 
     move.l  #5,D5           Move the number 4 to D5 to tell the program how many options there are
     bsr     input           branch to the input subroutine
+    move.b  D1,D4           Move the input to D4 for later use
     
     CMP.B   #1,D1           Compare input with number literal 1
     BEQ     block_counter   Branch to block/counter subroutine
@@ -1331,8 +1372,7 @@ hit_against_block:
     lea     hit_against_block_msg,A1
     trap    #15  
     
-    move.b  PLA_DAMAGE,D5       Store the player damage value in D5
-    sub.b   D5,(A5)           Remove the player's damage from the enemy's health
+    bsr     damage_enemy    Deal damage to the enemy
     
     bsr     press_continue
     rts
@@ -1342,8 +1382,7 @@ hit_against_magic:
     lea     hit_against_magic_msg,A1
     trap    #15
     
-    move.b  PLA_DAMAGE,D5       Store the player damage value in D5
-    sub.b   D5,(A5)           Remove the player's damage from the enemy's health
+    bsr     damage_enemy    Deal damage to the enemy
     
     bsr     press_continue
     rts
@@ -1353,8 +1392,7 @@ hit_against_melee:
     lea     hit_against_melee_msg,A1
     trap    #15
     
-    move.b  PLA_DAMAGE,D5       Store the player damage value in D5
-    sub.b   D5,(A5)           Remove the player's damage from the enemy's health
+    bsr     damage_enemy    Deal damage to the enemy
     
     bsr     press_continue
     rts
@@ -1364,10 +1402,8 @@ hit_by_counter:
     lea     hit_by_counter_msg,A1
     trap    #15  
     
-    add.w   #DAMAGE,A5           Move the enemy pointer to its damage value
-    move.b  (A5),D5             Store the damage value in D5
-    sub.w   #DAMAGE,A5           Move the enemy pointer back to the enemy health/root
-    sub.b   D5,PLAYER           Remove the enemy's damage from the player's health
+    move.b  #1,D2               Move the enemy attack type to D2
+    bsr     damage_player       Deal damage to the player
     
     bsr     press_continue
     rts
@@ -1377,10 +1413,8 @@ hit_by_magic:
     lea     hit_by_magic_msg,A1
     trap    #15  
     
-    add.w   #DAMAGE,A5           Move the enemy pointer to its damage value
-    move.b  (A5),D5             Store the damage value in D5
-    sub.w   #DAMAGE,A5           Move the enemy pointer back to the enemy health/root
-    sub.b   D5,PLAYER           Remove the enemy's damage from the player's health
+    move.b  #2,D2               Move the enemy attack type to D2
+    bsr     damage_player       Deal damage to the player
     
     bsr     press_continue
     rts
@@ -1390,13 +1424,67 @@ hit_by_melee:
     lea     hit_by_melee_msg,A1
     trap    #15
     
-    add.w   #DAMAGE,A5           Move the enemy pointer to its damage value
-    move.b  (A5),D5             Store the damage value in D5
-    sub.w   #DAMAGE,A5           Move the enemy pointer back to the enemy health/root
-    sub.b   D5,PLAYER           Remove the enemy's damage from the player's health
+    move.b  #3,D2               Move the enemy attack type to D2
+    bsr     damage_player       Deal damage to the player
     
     bsr     press_continue
     rts
+    
+damage_enemy:
+    move.b  PLA_DAMAGE,D5       Store the player damage value in D5
+    CMP.B   PLA_CLASS,D4        Check if the player attack type matches the player class
+    BEQ     double_damage_enemy Deal double damage to the enemy if attack type matches the class
+    sub.b   D5,(A5)             Remove the player's damage from the enemy's health
+    rts                         Return from subroutine
+    
+double_damage_enemy:
+    LSL     #1,D5               Double the player damage
+    sub.b   D5,(A5)             Remove double the player's damage from the enemy's health
+    
+    bsr     endl                Break to new line
+    move.l  #PURPLE,D1          Load colour purple
+    bsr     change_font_colour  Change the font colour
+    
+    lea     double_damage_msg,A1    Load the double damage message
+    move.b  #14,D0              Move number literal 14 to D0 for trap command
+    trap    #15
+    
+    move.l  #WHITE,D1           Load colour white
+    bsr     change_font_colour  Change the font colour
+    
+    rts                         Return from subroutine
+
+damage_player:
+    add.w   #DAMAGE,A5          Move the enemy pointer to its damage value
+    move.b  (A5),D5             Store the damage value in D5
+    
+    sub.w   #DAMAGE,A5          Move the enemy pointer back to the enemy health/root
+    add.w   #CLASS,A5           Move the enemy pointer to its class value
+    
+    CMP.B   (A5),D2             Compare the enemy attack type to its class
+    sub.w   #CLASS,A5           Move the enemy pointer back to the enemy health/root
+    BEQ     double_damage_player    Deal double damage to the player
+    
+    sub.b   D5,PLAYER           Remove the enemy's damage from the player's health
+
+    rts                         Return from subroutine
+    
+double_damage_player:
+    LSL     #1,D5               Double the enemy damage
+    sub.b   D5,PLAYER           Remove double the enemy's damage from the player's health
+    
+    bsr     endl                Break to new line
+    move.l  #RED,D1          Load colour purple
+    bsr     change_font_colour  Change the font colour
+    
+    lea     double_damage_msg,A1    Load the double damage message
+    move.b  #14,D0              Move number literal 14 to D0 for trap command
+    trap    #15
+    
+    move.l  #WHITE,D1           Load colour white
+    bsr     change_font_colour  Change the font colour
+    
+    rts                         Return from subroutine
 
 *-------------------------------------------------------
 *----------------------Shop State-----------------------
@@ -2128,14 +2216,17 @@ setup_loot:
     move.b  #1,$7002  Move loot potions
     move.b  #2,$7003  Move loot keys
     move.b  #LIFE_PER_TORCH,$7004  Move loot torches
-    move.b  #1,$7005  Move loot active state
+    move.b  #5,$7005  Move loot gold
+    move.b  #1,$7006  Move loot active state
     
     * Setup second loot pile
     move.w  #$8155,$7010  Move loot coordinates
     move.b  #3,$7012  Move loot potions
     move.b  #5,$7013  Move loot keys
     move.b  #1,$7014  Move loot torches
-    move.b  #1,$7015  Move loot active state
+    move.b  #2,$7015  Move loot gold
+    move.b  #1,$7016  Move loot active state
+
     
 setup_player:
     move.b  #10,PLAYER      put score/health in memory location $5FF0
@@ -2293,7 +2384,12 @@ player_msg:     dc.b    'Your Items:',0
 no_money_msg:   dc.b    '"Not enough gold, traveller."',$0D,$0A,0
 no_item_msg:    dc.b    '"Sorry, I dont have any of them left..."',$0D,$0A,0
 no_torch_msg:   dc.b    'The darkness burns...',$0D,$0A,0
-pickup_loot_msg dc.b    'You picked up a loot pile',$0D,$0A,0
+pickup_loot_msg:    dc.b    'You picked up a loot pile',$0D,$0A,0
+pickup_gold_msg:    dc.b    '+ Gold ',0
+pickup_potion_msg:  dc.b    '+ Potion ',0
+pickup_key_msg:     dc.b    '+ Key ',0
+pickup_torch_msg:   dc.b    '+ Torch life ',0
+double_damage_msg:  dc.b    'Class Bonus - Double Damage!',$0D,$0A,0
 graveyard_msg:  dc.b    '      ,-=-.       ______     _',$0D,$0A
                 dc.b    '     /  +  \     />----->  _|1|_',$0D,$0A
                 dc.b    '     | ~~~ |    // -/- /  |_ H _|',$0D,$0A
@@ -2361,6 +2457,7 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
 
 
     end start
+
 
 
 
