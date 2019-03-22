@@ -57,6 +57,13 @@
 *4      Torches
 *5      Damage increase
 
+*Loot:
+*Byte:  Name:
+*0-1    Position
+*2      Potions
+*3      Keys
+*4      Torches
+*5      Active State
     
 *Game state : 0 = Pick role/intro | 5 = Move around | 6 = Combat | 7 = Shop | 64 = End game
 *Class      : 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
@@ -74,6 +81,7 @@ GREEN       EQU $0000FF00   Green colour value
 BLUE        EQU $00FF0000   Blue colour value
 WHITE       EQU $00FFFFFF   White colour value
 PURPLE      EQU $00F000F0   Purple colour value
+GOLD        EQU $0000FFFF   Purple colour value
 FONT        EQU $01090000   Font value
 
 * Player
@@ -96,7 +104,7 @@ CLASS       EQU 2           The number of bytes to move from the enemy before re
 ALIVE       EQU 3           The number of bytes to move from the enemy before reaching the alive state
 POSITION    EQU 4           The number of bytes to move from the enemy before reaching the position
 
-* Shop
+* Shop & Loot
 FIRST_SHOP  EQU $6500       Memory location of the first shop
 SHOP_MAX    EQU 2           Number of shops in the game
 
@@ -104,6 +112,9 @@ S_POTIONS   EQU 2           The number of bytes to move from the shop root befor
 S_KEYS      EQU 3           The number of bytes to move from the shop root before reaching the keys
 S_TORCHES   EQU 4           The number of bytes to move from the shop root before reaching the torches
 S_DAMAGE_IN EQU 5           The number of bytes to move from the shop root before reaching the damage increase
+
+FIRST_LOOT  EQU $7000       Memory location of the first loot pile
+L_ACTIVE    EQU 5           The number of bytes to move from the loot pile root before reaching the active state
 
 * HUD
 CSR_POS_MOVE    EQU $3201   The cursor position to draw the HUD to when in movement state
@@ -131,6 +142,7 @@ start:
     bsr     setup_world
     bsr     setup_enemies
     bsr     setup_shops
+    bsr     setup_loot
 
     bsr     welcome    branch to the welcome subroutine
     bsr     press_continue
@@ -367,11 +379,69 @@ won_game:
 *-------------------------------------------------------
 *--------------------Movement State--------------------- 
 movement_checks:
-    bsr     manage_torch    Check if the torch life is zero and if damage player if so  
+    bsr     manage_torch    Check if the torch life is zero and if damage player if so
+    bsr     loot_piles_check Check for loot piles under the player 
     bsr     enemies_check   Check for enemies beside the player
     CMP.B   #5,GAME_STATE   Compare the movement gamestate number with the current gamestate
     BNE     return          Return from the loop if the game is not in the movement state anymore
     bsr     shops_check     Check for shops beside the player
+    
+    rts
+
+*-------------------Loot pile checks--------------------
+loot_piles_check:
+    lea     FIRST_LOOT,A5   Load the memory address of the first loot pile
+    move.b  #0,D5           Move the starting loot number to D5
+    bsr     loot_pile_loop  Loop through all loot piles
+    rts                     Return from subroutine
+    
+loot_pile_loop:
+    CMP.B   #ENEMY_MAX,D5   Compare the loot number with the maximum enemy number
+    BGE     return          Return from the loop if the current loot number is greater than or equal to the max
+
+    bsr     loot_pile_check Check for a loot pile
+    
+    add.b   #1,D5           Add to the current loot number
+    add.w   #12,A5          Add to the current loot pointer to move to the next loot pile
+    bra     loot_pile_loop  Keep looping the loot piles
+    
+loot_pile_check:
+    add.w   #L_ACTIVE,A5    Move to the active state
+    CMP.B   #0,(A5)         Check if the loot is active
+    sub.w   #L_ACTIVE,A5    Move to the active state
+    BEQ     return          Return if not active
+
+    move.w  (A5),D2         Move the loot pile position to D2 for large value comparison
+    CMP.L   D2,A6         Check if the player is on a loot pile   
+    BEQ     pickup_loot     Pickup the loot
+    
+    rts     Return if not touching a loot pile
+    
+pickup_loot:
+    bsr     endl                Line break
+    
+    move.l  #GOLD,D1            Load gold colour
+    bsr     change_font_colour  Change the font colour
+    
+    LEA     pickup_loot_msg,A1  Load the encounter message int A1
+    move.b  #14,D0              Move #14 to D0 to display message
+    trap    #15                 Display the loaded message
+    
+    move.l  #WHITE,D1           Load the white colour
+    bsr     change_font_colour  Change the font colour
+    
+    add.w   #S_POTIONS,A5       Move to potions number
+    move.b  (A5)+,D1            Move the loot potions number to D1 and increment
+    add.b   D1,PLA_POTIONS      Give the player the number of potions in the loot
+    
+    move.b  (A5)+,D1            Move the key number to D1 and increment
+    add.b   D1,PLA_KEYS         Give the player the number of keys in the loot
+    
+    move.b  (A5)+,D1            Move the torch number to D1 and increment
+    add.b   D1,PLA_TORCH        Give the player the number of torches in the loot
+    
+    move.b  #0,(A5)             Set the loot to not active
+    sub.w   #L_ACTIVE,A5        Move to active state
     
     rts
 
@@ -1612,6 +1682,7 @@ loop_columns:
     BGT     return              If the rows are greater than 22 end the loop
     
     bsr     draw_tile           Draw the current tile
+    bsr     check_for_loot_piles Draw the loot piles if there is one on the current tile
     bsr     check_for_player    Draw the player in the current tile if they're there
     bsr     check_for_enemies   Draw an enemy in the current tile if they is one there
     bsr     check_for_win_point Draw the win point in the current tile if it's there
@@ -1683,7 +1754,66 @@ draw_blank_tile:
     move.b  #14,D0
     trap    #15
     rts
+
+check_for_loot_piles:
+    lea     FIRST_LOOT,A5   Load the memory address of the first loot pile
+    move.b  #0,D5           Move the starting loot number to D5
+    bsr     loop_loot_piles Loop through all loot piles
+    rts                     Return from subroutine
     
+loop_loot_piles:
+    bsr     check_for_loot  Check for a loot pile
+    
+    CMP.B   #ENEMY_MAX,D5   Compare the enemy number with the maximum loot number
+    BGE     return          Return from the loop if the current loot number is greater than or equal to the max
+    
+    add.b   #1,D5           Add to the current loot number
+    add.w   #16,A5          Add to the current loot pointer to move to the next loot pile
+    sub.w   #L_ACTIVE,A5    Move to the root
+    bra     loop_loot_piles Keep looping the loot piles
+    
+check_for_loot:
+    add.w   #L_ACTIVE,A5    Move to the active state
+    CMP.B   #0,(A5)         Return if the loot is not active
+    BEQ     return
+    sub.w   #L_ACTIVE,A5    Move to the root
+
+    move.w  (A5),D3         Move the enemy coordinates into data register D3 for large-value comparisons
+    CMP.L   D3,A2           Check if the enemy is in the current position
+    BEQ     draw_loot       Draw the enemy if it is
+    add.w   #L_ACTIVE,A5    Move to the active state
+    rts                     Return if the enemy is not in the current position
+    
+draw_loot:
+    add.w   #L_ACTIVE,A5    Move to the active state
+
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
+    
+    sub.w   #512,D1         Move the cursor back by two columns
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  D1,D3           Move the value in D1 to D3 for storage
+    
+    move.l  #GOLD,D1         Move the colour red to D1
+    bsr     change_font_colour  Change the font colour
+    
+    lea     loot_mark,A1   load the enemy symbol
+    move.b  #14,D0          Move #14 to D0 for trap command 14
+    trap    #15             Draw the player mark
+    
+    move.l  #WHITE,D1       Move the colour white to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
+    
+    add.w   #512,D1         Move the cursor position two columns forward
+    move.b  #11,D0          Move byte #11 for trap command 11 
+    trap    #15             Set the cursor position
+    
+    rts 
+
 check_for_player:
     CMP.L   A6,A2
     BEQ     draw_player
@@ -1992,6 +2122,21 @@ setup_enemies:
     
     rts
     
+setup_loot:
+    * Setup first loot pile
+    move.w  #$80DE,$7000  Move loot coordinates
+    move.b  #1,$7002  Move loot potions
+    move.b  #2,$7003  Move loot keys
+    move.b  #LIFE_PER_TORCH,$7004  Move loot torches
+    move.b  #1,$7005  Move loot active state
+    
+    * Setup second loot pile
+    move.w  #$8155,$7010  Move loot coordinates
+    move.b  #3,$7012  Move loot potions
+    move.b  #5,$7013  Move loot keys
+    move.b  #1,$7014  Move loot torches
+    move.b  #1,$7015  Move loot active state
+    
 setup_player:
     move.b  #10,PLAYER      put score/health in memory location $5FF0
     move.b  #1,PLA_DAMAGE   Assign the default damage for the player
@@ -2091,6 +2236,7 @@ player_mark:    dc.b    '*',0
 enemy_mark:     dc.b    'X',0
 win_point_mark: dc.b    '@',0
 shop_mark:      dc.b    '$',0
+loot_mark:      dc.b    '%',0
 encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
 combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
                 dc.b    '2> Cast Magic.',$0D,$0A
@@ -2147,6 +2293,7 @@ player_msg:     dc.b    'Your Items:',0
 no_money_msg:   dc.b    '"Not enough gold, traveller."',$0D,$0A,0
 no_item_msg:    dc.b    '"Sorry, I dont have any of them left..."',$0D,$0A,0
 no_torch_msg:   dc.b    'The darkness burns...',$0D,$0A,0
+pickup_loot_msg dc.b    'You picked up a loot pile',$0D,$0A,0
 graveyard_msg:  dc.b    '      ,-=-.       ______     _',$0D,$0A
                 dc.b    '     /  +  \     />----->  _|1|_',$0D,$0A
                 dc.b    '     | ~~~ |    // -/- /  |_ H _|',$0D,$0A
@@ -2214,6 +2361,7 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
 
 
     end start
+
 
 
 
