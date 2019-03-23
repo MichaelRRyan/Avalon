@@ -84,8 +84,8 @@ GREEN       EQU $0000FF00   Green colour value
 BLUE        EQU $00FF0000   Blue colour value
 WHITE       EQU $00FFFFFF   White colour value
 PURPLE      EQU $00F000F0   Purple colour value
-GOLD        EQU $0000FFFF   Purple colour value
-MAROON      EQU $00000080   Maroon colour value
+GOLD        EQU $0000FFFF   gold colour value
+BROWN       EQU $00507090   brown colour value
 FONT        EQU $01090000   Font value
 
 * Player
@@ -129,7 +129,7 @@ CSR_POS_SHOP_P  EQU $3401   The cursor position to draw the HUD to when in shop 
 * Game
 WIN_POINT       EQU $8156   The position the player has to get to to win
 FIRST_DOOR      EQU $6FE0   The memory location of the first locked door
-MAX_DOORS       EQU 1       The number of locked doors in the game
+DOOR_MAX        EQU 1       The number of locked doors in the game
 OPEN_DOOR_POS   EQU $1000   The position doors are given when opened
 
 POTION_PRICE    EQU 5       The price in gold for a potion
@@ -288,6 +288,7 @@ tutorial_intro:
 *-------------------------------------------------------    
 input:
     bsr     endl            Branch to end line subroutine
+    bsr     get_cursor_pos  Get the position of the cursor in D3
     
     lea     input_nums_msg,A1 assign message to address register A1
     move.b  #14,D0          move literal 14 to DO
@@ -303,6 +304,22 @@ input:
     
     move.b  #4,D0           Move the number 4 to D0
     trap    #15             Take input
+    
+    move.b  D1,D5           Move the input to D5 for later
+    
+    move.w  D3,D1           Move the cursor position of the start of the line
+    move.b  #11,D0          Move the number literal 11 to D0 for trap command
+    trap    #15             Move the cursor back to the start of the line
+    
+    lea     blank_msg,A1    Load the blank message into A1 to wipe the line blank
+    move.b  #14,D0          Move number literal to D0 for trap command
+    trap    #15             Display the loaded message
+    
+    move.b  #11,D0          Move the number literal 11 to D0 for trap command
+    trap    #15             Move the cursor back to the start of the line
+    
+    clr.l   D1              Clear D1 of large values
+    move.b  D5,D1           Move the input back to D1
     
 manage_input:
     CMP     #1,D1           Check input against minimum value
@@ -409,7 +426,7 @@ loot_pile_loop:
     bsr     loot_pile_check Check for a loot pile
     
     add.b   #1,D5           Add to the current loot number
-    add.w   #12,A5          Add to the current loot pointer to move to the next loot pile
+    add.w   #16,A5          Add to the current loot pointer to move to the next loot pile
     bra     loot_pile_loop  Keep looping the loot piles
     
 loot_pile_check:
@@ -488,6 +505,9 @@ pickup_loot:
     
     move.l  #WHITE,D1           Load the white colour
     bsr     change_font_colour  Change the font colour
+    
+    bsr     press_continue      Wait for user input
+    bsr     draw_hud            Re-draw the hud
     
     rts
 
@@ -1172,8 +1192,9 @@ move_north:
     move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     sub     #16,A6              Move the player north
     
+    bsr     check_blocked       Check if the player is in a door
     bsr     decrement_torch     Remove one from the player's torch life
-    
+
     rts
     
 move_south:
@@ -1196,6 +1217,7 @@ move_south:
     move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     add     #16,A6              Move the player south
     
+    bsr     check_blocked       Check if the player is in a door
     bsr     decrement_torch     Remove one from the player's torch life
     
     rts
@@ -1220,6 +1242,7 @@ move_west:
     move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     sub     #1,A6               Move the player west
     
+    bsr     check_blocked       Check if the player is in a door
     bsr     decrement_torch     Remove one from the player's torch life
     
     rts
@@ -1244,6 +1267,7 @@ move_east:
     move.w  A6,PLA_P_POS        Move the player's previous location to a memory address for storage
     add     #1,A6               Move the player east
     
+    bsr     check_blocked       Check if the player is in a door
     bsr     decrement_torch     Remove one from the player's torch life
     
     rts
@@ -1255,6 +1279,66 @@ movement_blocked:
     bsr     press_continue          Pause the game until a key is pressed
     
     rts                             Return from the subroutine
+    
+check_blocked:
+    lea     FIRST_DOOR,A5   Load the memory address of the first door
+    move.b  #0,D7           Move the starting door number to D5
+    bsr     loop_thru_doors Loop through all doors
+    rts                     Return from subroutine
+    
+loop_thru_doors:
+    bsr     check_for_a_door  Check for a door
+    
+    CMP.B   #DOOR_MAX,D5    Compare the door number with the maximum door number
+    BGE     return          Return from the loop if the current door number is greater than or equal to the max
+    
+    add.b   #1,D7           Add to the current door number
+    add.w   #2,A5           Add to the current door pointer to move to the next door
+    bra     loop_thru_doors Keep looping the doors
+
+check_for_a_door:
+    move.w  (A5),D3         Move the door coordinates into data register D3 for large-value comparisons
+    CMP.L   D3,A6           Check if the door is in the current position
+    BEQ     in_a_door       Collide with the door if it is
+    rts                     Return if the door is not in the current position
+    
+in_a_door:
+    CMP.B   #0,PLA_KEYS     Check if the player has keys left
+    BLE     blocked_door    If the player has no keys they're blocked
+    
+    lea     locked_door_msg,A1  Load the locked door message
+    move.b  #14,D0          Move the number literal for trap command
+    trap    #15             Display the loaded message
+    
+    move.b  #2,D5           Move the number of input options
+    bsr     input           Take user input
+    
+    CMP.B   #1,D1           Compare the user input with num 1
+    BEQ     unlock_door     Unlock the door if the user chooses to
+    BNE     blocked_door    Branch to blocked door if the player doesn't unlock the door
+    
+unlock_door:
+    lea     unlocked_door_msg,A1  Load the unlocked door message
+    move.b  #14,D0          Move the number literal for trap command
+    trap    #15             Display the loaded message
+    
+    move.w  #OPEN_DOOR_POS,(A5) Move the door position out of the game for an open door
+    sub.b   #1,PLA_KEYS     Remove a key from the player
+    bsr     press_continue  Wait for player input
+    
+    rts                     Return from subroutine
+
+blocked_door:
+    lea     blocked_door_msg,A1  Load the blocked door message
+    move.b  #14,D0          Move the number literal for trap command
+    trap    #15             Display the loaded message
+    
+    move.w  PLA_P_POS,D3    Move the previous player position to D3
+    move.l  D3,A6           Move the player to their previous position
+    
+    bsr     press_continue  Wait for player input
+    
+    rts                     Return from subroutine
     
 *-------------------------------------------------------
 *---------------------Manage Combat---------------------
@@ -1530,8 +1614,6 @@ buy_potion:
     
     sub.w   #S_POTIONS,A5           Move the shop pointer back to root
     
-    bsr     endl                    Break to new line
-    
     lea     buy_item_msg,A1         Load the buy item message into A1
     move.b  #14,D0                  Move the number literal 14 to D0 for trap command
     trap    #15                     Display the loaded message
@@ -1553,9 +1635,7 @@ buy_key:
     add.b   #1,PLA_KEYS             Add one key to the player's inventory
     
     sub.w   #S_KEYS,A5              Move the shop pointer back to root
-    
-    bsr     endl                    Break to new line
-    
+
     lea     buy_item_msg,A1         Load the buy item message into A1
     move.b  #14,D0                  Move the number literal 14 to D0 for trap command
     trap    #15                     Display the loaded message
@@ -1577,9 +1657,7 @@ buy_torch:
     add.b   #LIFE_PER_TORCH,PLA_TORCH           Add ten to the player's torches life
     
     sub.w   #S_TORCHES,A5           Move the shop pointer back to root
-    
-    bsr     endl                    Break to new line
-    
+
     lea     buy_item_msg,A1         Load the buy item message into A1
     move.b  #14,D0                  Move the number literal 14 to D0 for trap command
     trap    #15                     Display the loaded message
@@ -1601,9 +1679,7 @@ upgrade_dmg:
     add.b   #1,PLA_DAMAGE               Add one to the player's damage value
     
     sub.w   #S_DAMAGE_IN,A5         Move the shop pointer back to root
-    
-    bsr     endl                    Break to new line
-        
+
     lea     buy_item_msg,A1         Load the buy item message into A1
     move.b  #14,D0                  Move the number literal 14 to D0 for trap command
     trap    #15                     Display the loaded message
@@ -1613,8 +1689,6 @@ upgrade_dmg:
     rts                             Return from subroutine
     
 leave_shop:
-    bsr     endl                Break to new line
-
     move.w  PLA_P_POS,D3        Move the player's previous position to D3 to avoid treating it as a negative number
     move.l  D3,A6               Move the player to their position before entering the shop
     move.b  #5,GAME_STATE       Switch game state to movement
@@ -1627,8 +1701,6 @@ leave_shop:
     rts                         Return from subroutine
     
 no_money:
-    bsr     endl            New line
-    
     lea     no_money_msg,A1 Load the no money message
     move.b  #14,D0          Move the number literal 14 to D0 for trap command
     trap    #15             Display the loaded message
@@ -1637,8 +1709,6 @@ no_money:
     rts                     Return from subroutine
     
 no_shop_potions:
-    bsr     endl            New line
-
     lea     no_item_msg,A1  Load the no money message
     move.b  #14,D0          Move the number literal 14 to D0 for trap command
     trap    #15             Display the loaded message
@@ -1648,8 +1718,6 @@ no_shop_potions:
     rts                     Return from subroutine
     
 no_shop_keys:
-    bsr     endl            New line
-
     lea     no_item_msg,A1  Load the no money message
     move.b  #14,D0          Move the number literal 14 to D0 for trap command
     trap    #15             Display the loaded message
@@ -1659,8 +1727,6 @@ no_shop_keys:
     rts                     Return from subroutine
     
 no_shop_torches:
-    bsr     endl            New line
-
     lea     no_item_msg,A1  Load the no money message
     move.b  #14,D0          Move the number literal 14 to D0 for trap command
     trap    #15             Display the loaded message
@@ -1670,8 +1736,6 @@ no_shop_torches:
     rts                     Return from subroutine
 
 no_shop_damage_up:
-    bsr     endl            New line
-
     lea     no_item_msg,A1  Load the no money message
     move.b  #14,D0          Move the number literal 14 to D0 for trap command
     trap    #15             Display the loaded message
@@ -1747,6 +1811,14 @@ change_font_colour:        * Changes the font colour to the colour loaded in D1
     clr.l   D2          Clear D2 for later use
     rts                 Return from subroutine
     
+get_cursor_pos:
+    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    trap    #15             Trap to get the cursor position in D1
+    
+    move.l  D1,D3           Move the value in D1 to D3 for storage
+    rts
+    
 *-------------------------------------------------------
 *----------------------Draw loop------------------------
 *-------------------------------------------------------
@@ -1781,6 +1853,7 @@ loop_columns:
     bsr     check_for_enemies   Draw an enemy in the current tile if they is one there
     bsr     check_for_win_point Draw the win point in the current tile if it's there
     bsr     check_for_shops     Draw a shop in the current tile if there is one
+    bsr     check_for_doors     Draw a door in the current ile if there is one
     
     add.b   #1,D7               Add to the column count
     add     #1,A2               Move to the next memory location
@@ -1849,6 +1922,7 @@ draw_blank_tile:
     trap    #15
     rts
 
+*----------------------Draw Loot------------------------
 check_for_loot_piles:
     lea     FIRST_LOOT,A5   Load the memory address of the first loot pile
     move.b  #0,D5           Move the starting loot number to D5
@@ -1908,6 +1982,7 @@ draw_loot:
     
     rts 
 
+*---------------------Draw Player-----------------------
 check_for_player:
     CMP.L   A6,A2
     BEQ     draw_player
@@ -1941,6 +2016,7 @@ draw_player:
     
     rts
     
+*---------------------Draw Enemies----------------------
 check_for_enemies:
     lea     FIRST_ENEMY,A5  Load the memory address of the first enemy
     move.b  #0,D5           Move the starting enemy number to D5
@@ -1994,7 +2070,8 @@ draw_enemy:
     trap    #15             Set the cursor position
     
     rts 
-    
+ 
+*----------------------Draw Shops-----------------------
 check_for_shops:
     lea     FIRST_SHOP,A5   Load the memory address of the first shop
     move.b  #0,D5           Move the starting shop number to D5
@@ -2045,6 +2122,52 @@ draw_shop:
     
     rts
 
+*----------------------Draw Doors-----------------------
+check_for_doors:
+    lea     FIRST_DOOR,A5   Load the memory address of the first door
+    move.b  #0,D5           Move the starting door number to D5
+    bsr     loop_doors      Loop through all doors
+    rts                     Return from subroutine
+    
+loop_doors:
+    bsr     check_for_door  Check for a door
+    
+    CMP.B   #DOOR_MAX,D5    Compare the door number with the maximum door number
+    BGE     return          Return from the loop if the current door number is greater than or equal to the max
+    
+    add.b   #1,D5           Add to the current door number
+    add.w   #2,A5          Add to the current door pointer to move to the next door
+    bra     loop_doors      Keep looping the doors
+    
+check_for_door:
+    move.w  (A5),D3         Move the door coordinates into data register D3 for large-value comparisons
+    CMP.L   D3,A2           Check if the door is in the current position
+    BEQ     draw_door       Draw the door if it is
+    rts                     Return if the door is not in the current position
+    
+draw_door:
+    bsr     get_cursor_pos  Get the position of the cursor and save the value to D1 and D3
+    
+    sub.w   #512,D1         Move the cursor back by two columns
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  #BROWN,D1       Move the colour red to D1
+    bsr     change_font_colour  Change the font colour
+    
+    lea     door_mark,A1    load the door symbol
+    move.b  #14,D0          Move #14 to D0 for trap command 14
+    trap    #15             Draw the door mark
+    
+    move.l  #WHITE,D1       Move the colour white to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.l  D3,D1           Move the value in D3 to D1 for previous cursor position
+    move.b  #11,D0          Move byte #11 for trap command 11 
+    trap    #15             Set the cursor position
+    
+    rts                     Return from subroutine
+
+*--------------------Draw Win Point---------------------
 check_for_win_point:
     CMP.L   #WIN_POINT,A2   Check if the win point is in the current tile
     BEQ     draw_win_point  Branch to draw the win point if so
@@ -2198,7 +2321,7 @@ setup_world:
     move.b  #5,$8156
     
     * Setup the doors
-    move.w  $8139,FIRST_DOOR    Set the location of the first door
+    move.w  #$80EB,FIRST_DOOR    Set the location of the first door
     
     rts
 
@@ -2289,6 +2412,7 @@ welcome_msg:    dc.b    '*******************************************************
                 dc.b    '(___/    \___)\__/(___/    \___)\_______)\"_____/    \___|\____\)',$0D,$0A,$0D,$0A
                 dc.b    '*****************************************************************',$0D,$0A,0
 loop_msg:       dc.b    '.',0
+blank_msg:      dc.b    '                                                                                   ',0
 tutorial_msg    dc.b    'The darkness here is dangerious, keep your torch close and dont let it go out.',$0D,$0A
                 dc.b    'Every movement you make decreases your torch life, so think before you move.',$0D,$0A
                 dc.b    'You can buy more torches in the shop, thats probably a good place to start...',$0D,$0A,0
@@ -2400,6 +2524,12 @@ pickup_potion_msg:  dc.b    '+ Potion ',0
 pickup_key_msg:     dc.b    '+ Key ',0
 pickup_torch_msg:   dc.b    '+ Torch life ',0
 double_damage_msg:  dc.b    'Class Bonus - Double Damage!',$0D,$0A,0
+locked_door_msg:    dc.b    'The door seems locked, you have a key that might fit it.',$0D,$0A
+                    dc.b    'Do you want to try unlock it?',$0D,$0A,$0D,$0A
+                    dc.b    '1> Yes. (-1 key)',$0D,$0A
+                    dc.b    '2> No.',$0D,$0A,0
+unlocked_door_msg:  dc.b    'The door swings open, the key lodged stuck in the keyhole.',$0D,$0A,0
+blocked_door_msg:   dc.b    'The door seems solid, it wont budge.',$0D,$0A,0
 graveyard_msg:  dc.b    '      ,-=-.       ______     _',$0D,$0A
                 dc.b    '     /  +  \     />----->  _|1|_',$0D,$0A
                 dc.b    '     | ~~~ |    // -/- /  |_ H _|',$0D,$0A
@@ -2467,6 +2597,7 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
 
 
     end start
+
 
 
 
