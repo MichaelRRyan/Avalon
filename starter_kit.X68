@@ -122,14 +122,16 @@ L_ACTIVE    EQU 6           The number of bytes to move from the loot pile root 
 
 * HUD
 CSR_POS_MOVE    EQU $3201   The cursor position to draw the HUD to when in movement state
-CSR_POS_BATTLE  EQU $2001   The cursor position to draw the HUD to when in battle state
+CSR_POS_BATTLE_E    EQU $1801   The cursor position to draw the enemy HUD to when in battle state
+CSR_POS_BATTLE_P    EQU $3401   The cursor position to draw the player HUD to when in battle state
 CSR_POS_SHOP_S  EQU $1801   The cursor position to draw the HUD to when in shop state for shop info
 CSR_POS_SHOP_P  EQU $3401   The cursor position to draw the HUD to when in shop state for player info
+*$2001
 
 * Game
 WIN_POINT       EQU $8156   The position the player has to get to to win
 FIRST_DOOR      EQU $6FE0   The memory location of the first locked door
-DOOR_MAX        EQU 1       The number of locked doors in the game
+DOOR_MAX        EQU 3       The number of locked doors in the game
 OPEN_DOOR_POS   EQU $1000   The position doors are given when opened
 
 POTION_PRICE    EQU 5       The price in gold for a potion
@@ -899,8 +901,8 @@ draw_battle_info:
     bsr     get_cursor_pos   Get the cursor position and store it in D3
     
     * Move cursor to draw player info
-    move.w  #CSR_POS_BATTLE,D5
-    move.w  #CSR_POS_BATTLE,D1           
+    move.w  #CSR_POS_BATTLE_P,D5
+    move.w  #CSR_POS_BATTLE_P,D1           
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
     
@@ -909,17 +911,6 @@ draw_battle_info:
     trap    #15             Display the loaded message
     
     move.b  PLAYER,D1       Move the player health value to D1 to display
-    move.b  #3,D0           Move literal 3 for display number trap command
-    trap    #15             Display the number in D1
-    
-    * Move the cursor to draw enemy info
-    bsr     next_cursor_pos Move to the next cursor position
-    
-    lea     enemy_health_msg,A1 Load the hud message
-    move.b  #14,D0              Move literal 14 for display message trap command
-    trap    #15                 Display the loaded message
-    
-    move.b  (A5),D1         Move the enemy health value to D1 to display
     move.b  #3,D0           Move literal 3 for display number trap command
     trap    #15             Display the number in D1
     
@@ -932,6 +923,28 @@ draw_battle_info:
     
     lea     PLA_POTIONS,A4
     bsr     draw_item_number
+    
+    * Move the cursor to draw enemy info
+    move.b  #11,D0
+    move.w  #CSR_POS_BATTLE_E,D5
+    move.w  #CSR_POS_BATTLE_E,D1           
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    
+    lea     health_msg,A1 Load the hud message
+    move.b  #14,D0              Move literal 14 for display message trap command
+    trap    #15                 Display the loaded message
+    
+    move.b  (A5),D1         Move the enemy health value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
+    * Move the cursor to draw potion information
+    bsr     next_cursor_pos Move to the next cursor position
+    
+    lea     enemy_knight_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
     
     * Move the cursor back to its previous position
     move.w  D3,D1           Move the previous cursor position back to D1
@@ -1141,7 +1154,7 @@ replay:
     move.b  #14,D0          Move the number literal 14 to D0 for trap command
     trap    #15             Display the loaded message
     
-    move.b  #2,D5           Move the number of input options to D5
+    move.l  #2,D5           Move the number of input options to D5
     bsr     input           Take user input
     move.b  D1,D2           Move the input to D2 so it's not trampled by the clear screen
     
@@ -1311,10 +1324,10 @@ check_blocked:
     rts                     Return from subroutine
     
 loop_thru_doors:
-    bsr     check_for_a_door  Check for a door
-    
-    CMP.B   #DOOR_MAX,D5    Compare the door number with the maximum door number
+    CMP.B   #DOOR_MAX,D7    Compare the door number with the maximum door number
     BGE     return          Return from the loop if the current door number is greater than or equal to the max
+
+    bsr     check_for_a_door  Check for a door
     
     add.b   #1,D7           Add to the current door number
     add.w   #2,A5           Add to the current door pointer to move to the next door
@@ -2345,7 +2358,12 @@ setup_world:
     move.b  #5,$8156
     
     * Setup the doors
-    move.w  #$80EB,FIRST_DOOR    Set the location of the first door
+    lea     FIRST_DOOR,A5   Set the first door location to A5
+    move.w  #$80EB,(A5)     Set the location of the first door
+    add.w   #2,A5           Increment the door memory address
+    move.w  #$80B6,(A5)     Set the location of the first door
+    add.w   #2,A5           Increment the door memory address
+    move.w  #$8115,(A5)
     
     rts
 
@@ -2395,7 +2413,7 @@ setup_player:
     
     move.b  #100,PLA_GOLD    Assign the player's base gold value
     move.b  #1,PLA_POTIONS  Assign the player's base potions value
-    move.b  #0,PLA_KEYS     Assign the player's base keys value
+    move.b  #3,PLA_KEYS     Assign the player's base keys value
     *move.b  #LIFE_PER_TORCH,PLA_TORCH   Assign the player's base torch value
     move.b  #50,PLA_TORCH   Assign the player's base torch value
     
@@ -2516,7 +2534,9 @@ hit_by_magic_msg:       dc.b    'You try to block the enemies attack, but they c
                         dc.b    'your defense and damages you!',$0D,$0A,0
 hit_by_melee_msg:       dc.b    'You try to charge up a spell, but the enemy lunges forward and damages you!',$0D,$0A,0
 health_msg:             dc.b    'Health: ',0
-enemy_health_msg:       dc.b    'Enemy Health: ',0
+enemy_knight_msg:       dc.b    'Enemy Knight',0
+enemy_mage_msg:         dc.b    'Enemy Mage',0
+enemy_rogue_msg:        dc.b    'Enemy Rogue',0
 torch_msg:              dc.b    'Torch Life: ',0
 damage_lvl_msg          dc.b    'Damage lvl: ',0
 inventory_msg:          dc.b    'Inventory:',0
@@ -2612,6 +2632,7 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
                 dc.b    '  --- -- -/___\- -- --- ',$0D,$0A,0
                 
     end start
+
 
 
 
