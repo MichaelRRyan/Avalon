@@ -735,17 +735,15 @@ draw_hud:
     
     rts
 
+*-------------------Draw Player Info--------------------
 draw_player_info:
-    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    trap    #15             Trap to get the cursor position in D1
-    
-    move.w  D1,D3           Move the current cursor position to D3 for later
+    bsr     get_cursor_pos   Get the cursor position and store it in D3
     
     * Display the player health
-    move.w  #CSR_POS_MOVE,D1           
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    move.w  #CSR_POS_MOVE,D5 Move a start cursor position to D5
+    move.w  #CSR_POS_MOVE,D1 Move a start cursor position to D1 to move the cursor
+    trap    #15              Move the cursor position
+    clr.l   D1               Clear the cursor position from D1
     
     lea     health_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -756,13 +754,9 @@ draw_player_info:
     trap    #15             Display the number in D1
     
     * Display the torch life
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1         
-    add.w   #1,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos  Move to the next cursor position
     
-    lea     torch_msg,A1   Load the hud message
+    lea     torch_msg,A1    Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
     
@@ -771,22 +765,14 @@ draw_player_info:
     trap    #15             Display the number in D1
     
     * Display the inventory
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1
-    add.w   #2,D1          
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos  Move to the next cursor position
     
     lea     inventory_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
     
     * Display the player gold
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1         
-    add.w   #3,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos  Move to the next cursor position
     
     lea     gold_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -796,11 +782,7 @@ draw_player_info:
     bsr     draw_item_number
     
     * Display the player potions
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1         
-    add.w   #4,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos  Move to the next cursor position
     
     lea     potions_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -810,11 +792,7 @@ draw_player_info:
     bsr     draw_item_number
     
     * Display the player keys
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1         
-    add.w   #5,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos  Move to the next cursor position
     
     lea     key_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -834,23 +812,19 @@ draw_player_info:
     
     rts
     
+*-------------------Draw Map Legend---------------------
 draw_map_legend:
     * Display the legend message
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
-    add.w   #8,D1           Move down rows
-    trap    #15             Set the cursor position with trap command 11
+    move.w  #CSR_POS_MOVE,D5 Move a start cursor position to D5
+    add.w   #7,D5            increment the start position by 7
+    bsr     next_cursor_pos  Move to the next cursor position
     
     move.b  #14,D0          Move literal 14 for display message trap command
     lea     map_legend_msg,A1 Load the message into A1
     trap    #15             Display the loaded message
     
     * Display the player mark
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
-    add.w   #9,D1           Move down rows
-    trap    #15             Set the cursor position with trap command 11
-    
+    bsr     next_cursor_pos  Move to the next cursor position
     move.l  #GREEN,D1       Load the colour green to D1
     bsr     change_font_colour  Change the font colour
     
@@ -861,11 +835,7 @@ draw_map_legend:
     trap    #15             Display the loaded message
     
     * Display the enemy mark
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
-    add.w   #10,D1           Move down rows
-    trap    #15             Set the cursor position with trap command 11
-    
+    bsr     next_cursor_pos  Move to the next cursor position
     move.l  #RED,D1         Load the colour red to D1
     bsr     change_font_colour  Change the font colour
     
@@ -876,11 +846,7 @@ draw_map_legend:
     trap    #15             Display the loaded message
     
     * Display the win point mark
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
-    add.w   #11,D1          Move down rows
-    trap    #15             Set the cursor position with trap command 11
-    
+    bsr     next_cursor_pos  Move to the next cursor position
     move.l  #BLUE,D1       Load the colour blue to D1
     bsr     change_font_colour  Change the font colour
     
@@ -891,11 +857,7 @@ draw_map_legend:
     trap    #15             Display the loaded message
    
     * Display the shop mark
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
-    add.w   #12,D1          Move down rows
-    trap    #15             Set the cursor position with trap command 11
-    
+    bsr     next_cursor_pos  Move to the next cursor position
     move.l  #PURPLE,D1      Load the colour purple to D1
     bsr     change_font_colour  Change the font colour
     
@@ -906,11 +868,7 @@ draw_map_legend:
     trap    #15             Display the loaded message
     
     * Display the loot mark
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
-    add.w   #13,D1          Move down rows
-    trap    #15             Set the cursor position with trap command 11
-    
+    bsr     next_cursor_pos  Move to the next cursor position
     move.l  #GOLD,D1       Load the colour gold to D1
     bsr     change_font_colour  Change the font colour
     
@@ -921,11 +879,7 @@ draw_map_legend:
     trap    #15             Display the loaded message
     
     * Display the door mark
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
-    add.w   #14,D1          Move down rows
-    trap    #15             Set the cursor position with trap command 11
-    
+    bsr     next_cursor_pos Move to the next cursor position
     move.l  #BROWN,D1       Load the colour brown to D1
     bsr     change_font_colour  Change the font colour
     
@@ -939,30 +893,13 @@ draw_map_legend:
     bsr     change_font_colour  Change the font colour
     
     rts                     Return from subroutine
-    
-draw_item_number:
-    move.b  #14,D0          Move literal 3 for display number trap command
-    lea     bracket_open_msg,A1
-    trap    #15
 
-    move.b  #3,D0           Move literal 3 for display number trap command
-    move.b  (A4),D1         Move the value in the register A4 to D1 to display
-    trap    #15             Display the number in D1
-    
-    move.b  #14,D0          Move literal 3 for display number trap command
-    lea     bracket_close_msg,A1
-    trap    #15
-    rts
-    
-
+*-------------------Draw Battle Info--------------------
 draw_battle_info:
-    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    trap    #15             Trap to get the cursor position in D1
-    
-    move.w  D1,D3           Move the current cursor position to D3 for later
+    bsr     get_cursor_pos   Get the cursor position and store it in D3
     
     * Move cursor to draw player info
+    move.w  #CSR_POS_BATTLE,D5
     move.w  #CSR_POS_BATTLE,D1           
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
@@ -976,11 +913,7 @@ draw_battle_info:
     trap    #15             Display the number in D1
     
     * Move the cursor to draw enemy info
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_BATTLE,D1
-    add.w   #1,D1
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     enemy_health_msg,A1 Load the hud message
     move.b  #14,D0              Move literal 14 for display message trap command
@@ -991,11 +924,7 @@ draw_battle_info:
     trap    #15             Display the number in D1
     
     * Move the cursor to draw potion information
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_BATTLE,D1
-    add.w   #3,D1
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     potions_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1012,15 +941,13 @@ draw_battle_info:
     clr     D1              Clear D1 for later use
     
     rts
-    
+
+*-------------------Draw Shop Info----------------------
 draw_shop_info:
-    move.w  #255,D1         Move the word #255 to D1 to set the type of trap 11
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    trap    #15             Trap to get the cursor position in D1
-    
-    move.w  D1,D3           Move the current cursor position to D3 for later
+    bsr     get_cursor_pos   Get the cursor position and store it in D3
     
     * Move cursor to draw shop info
+    move.w  #CSR_POS_SHOP_S,D5
     move.w  #CSR_POS_SHOP_S,D1           
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
@@ -1031,11 +958,7 @@ draw_shop_info:
     
     
     * Display the shop's potions
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_S,D1         
-    add.w   #1,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     potions_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1046,11 +969,7 @@ draw_shop_info:
     bsr     draw_item_number
     
     * Display the shop's keys
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_S,D1         
-    add.w   #2,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     key_msg,A1      Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1061,11 +980,7 @@ draw_shop_info:
     bsr     draw_item_number
     
     * Display the shop's torches
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_S,D1         
-    add.w   #3,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     torches_msg,A1  Load the torches message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1076,11 +991,7 @@ draw_shop_info:
     bsr     draw_item_number
     
     * Display the shop's damage upgrades
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_S,D1         
-    add.w   #4,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     damage_up_msg,A1 Load the damage upgrades message
     move.b  #14,D0           Move literal 14 for display message trap command
@@ -1092,21 +1003,18 @@ draw_shop_info:
     sub.w   #S_DAMAGE_IN,A5     Bring the pointer back to the root of the shop
     
     * Display the inventory
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.b  #11,D0              Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_SHOP_P,D5   
     move.w  #CSR_POS_SHOP_P,D1       
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    trap    #15                 Set the cursor position with trap command 11
+    clr     D1                  Clear D1 of the cursor position
     
-    lea     inventory_msg,A1   Load the hud message
-    move.b  #14,D0          Move literal 14 for display message trap command
-    trap    #15             Display the loaded message
+    lea     inventory_msg,A1    Load the hud message
+    move.b  #14,D0              Move literal 14 for display message trap command
+    trap    #15                 Display the loaded message
     
     * Display the player gold
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_P,D1         
-    add.w   #1,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     gold_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1116,11 +1024,7 @@ draw_shop_info:
     bsr     draw_item_number
     
     * Display the player potions
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_P,D1         
-    add.w   #2,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     potions_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1130,11 +1034,7 @@ draw_shop_info:
     bsr     draw_item_number
     
     * Display the player keys
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_P,D1         
-    add.w   #3,D1  
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     key_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1144,11 +1044,8 @@ draw_shop_info:
     bsr     draw_item_number
     
     * Display the torch life
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_P,D1
-    add.w   #5,D1       
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     torch_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
@@ -1159,11 +1056,7 @@ draw_shop_info:
     trap    #15             Display the number in D1
     
     * Display the player's damage level
-    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
-    move.w  #CSR_POS_SHOP_P,D1
-    add.w   #6,D1       
-    trap    #15             Set the cursor position with trap command 11
-    clr     D1              Clear D1 of the cursor position
+    bsr     next_cursor_pos Move to the next cursor position
     
     lea     damage_lvl_msg,A1   Load the damage level message
     move.b  #14,D0              Move literal 14 for display message trap command
@@ -1180,6 +1073,29 @@ draw_shop_info:
     
     clr     D1              Clear D1 for later use
     
+    rts
+
+*-------------------Helper Branches---------------------
+next_cursor_pos:          * Moves the cursor one row down
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    add.w   #1,D5           Move down rows
+    move.w  D5,D1           Move the current cursor pos to D1 to set it
+    trap    #15             Set the cursor position with trap command 11
+    clr     D1              Clear D1 of the cursor position
+    rts                     Return from the subroutine
+
+draw_item_number:
+    move.b  #14,D0          Move literal 3 for display number trap command
+    lea     bracket_open_msg,A1
+    trap    #15
+
+    move.b  #3,D0           Move literal 3 for display number trap command
+    move.b  (A4),D1         Move the value in the register A4 to D1 to display
+    trap    #15             Display the number in D1
+    
+    move.b  #14,D0          Move literal 3 for display number trap command
+    lea     bracket_close_msg,A1
+    trap    #15
     rts
 
 *-------------------------------------------------------
@@ -2695,22 +2611,6 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
                 dc.b    ' |   |  |_|###|_|  |   |',$0D,$0A
                 dc.b    '  --- -- -/___\- -- --- ',$0D,$0A,0
                 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     end start
 
 
@@ -2735,7 +2635,8 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
 
 
 
+
 *~Font name~Courier New~
-*~Font size~11~
+*~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
