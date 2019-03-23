@@ -823,7 +823,9 @@ draw_player_info:
     lea     PLA_KEYS,A4
     bsr     draw_item_number
     
-    move.w  D3,D1           Move the current cursor position to D3 for later
+    bsr     draw_map_legend Draw the map legend
+    
+    move.w  D3,D1           Move the previos cursor position to D1 to put it back in place
     
     move.b  #11,D0          Move the byte #11 to D0 for trap command 11          
     trap    #15             Set the cursor position with trap command 11
@@ -831,6 +833,112 @@ draw_player_info:
     clr     D1              Clear D1 for later use
     
     rts
+    
+draw_map_legend:
+    * Display the legend message
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
+    add.w   #8,D1           Move down rows
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     map_legend_msg,A1 Load the message into A1
+    trap    #15             Display the loaded message
+    
+    * Display the player mark
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
+    add.w   #9,D1           Move down rows
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  #GREEN,D1       Load the colour green to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     player_mark,A1  Load the message into A1
+    trap    #15             Display the loaded message
+    lea     map_player_msg,A1 Load the message into A1
+    trap    #15             Display the loaded message
+    
+    * Display the enemy mark
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
+    add.w   #10,D1           Move down rows
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  #RED,D1         Load the colour red to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     enemy_mark,A1   Load the message into A1
+    trap    #15             Display the loaded message
+    lea     map_enemy_msg,A1 Load the message into A1
+    trap    #15             Display the loaded message
+    
+    * Display the win point mark
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
+    add.w   #11,D1          Move down rows
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  #BLUE,D1       Load the colour blue to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     win_point_mark,A1   Load the message into A1
+    trap    #15             Display the loaded message
+    lea     map_win_point_msg,A1 Load the message into A1
+    trap    #15             Display the loaded message
+   
+    * Display the shop mark
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
+    add.w   #12,D1          Move down rows
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  #PURPLE,D1      Load the colour purple to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     shop_mark,A1   Load the message into A1
+    trap    #15             Display the loaded message
+    lea     map_shop_msg,A1 Load the message into A1
+    trap    #15             Display the loaded message
+    
+    * Display the loot mark
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
+    add.w   #13,D1          Move down rows
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  #GOLD,D1       Load the colour gold to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     loot_mark,A1    Load the message into A1
+    trap    #15             Display the loaded message
+    lea     map_loot_msg,A1 Load the message into A1
+    trap    #15             Display the loaded message
+    
+    * Display the door mark
+    move.b  #11,D0          Move the byte #11 to D0 for trap command 11
+    move.w  #CSR_POS_MOVE,D1    Get the base cursor position    
+    add.w   #14,D1          Move down rows
+    trap    #15             Set the cursor position with trap command 11
+    
+    move.l  #BROWN,D1       Load the colour brown to D1
+    bsr     change_font_colour  Change the font colour
+    
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     door_mark,A1    Load the message into A1
+    trap    #15             Display the loaded message
+    lea     map_door_msg,A1 Load the message into A1
+    trap    #15             Display the loaded message
+    
+    move.l  #WHITE,D1       Load the colour brown to D1
+    bsr     change_font_colour  Change the font colour
+    
+    rts                     Return from subroutine
     
 draw_item_number:
     move.b  #14,D0          Move literal 3 for display number trap command
@@ -2462,6 +2570,13 @@ win_point_mark: dc.b    '@',0
 shop_mark:      dc.b    '$',0
 loot_mark:      dc.b    '%',0
 door_mark:      dc.b    '#',0
+map_legend_msg:     dc.b    'Map Legend:',0
+map_player_msg:     dc.b    ' = Player',0
+map_enemy_msg:      dc.b    ' = Enemy',0
+map_win_point_msg:  dc.b    ' = Objective',0
+map_shop_msg:       dc.b    ' = Shop',0
+map_loot_msg:       dc.b    ' = Loot Pile',0
+map_door_msg:       dc.b    ' = Locked Door',0
 encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
 combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
                 dc.b    '2> Cast Magic.',$0D,$0A
@@ -2621,6 +2736,6 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
 
 
 *~Font name~Courier New~
-*~Font size~10~
+*~Font size~11~
 *~Tab type~1~
 *~Tab size~4~
