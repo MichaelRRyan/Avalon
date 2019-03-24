@@ -122,7 +122,7 @@ L_ACTIVE    EQU 6           The number of bytes to move from the loot pile root 
 
 * HUD
 CSR_POS_MOVE    EQU $3201   The cursor position to draw the HUD to when in movement state
-CSR_POS_BATTLE_E    EQU $1801   The cursor position to draw the enemy HUD to when in battle state
+CSR_POS_BATTLE_E    EQU $1901   The cursor position to draw the enemy HUD to when in battle state
 CSR_POS_BATTLE_P    EQU $3401   The cursor position to draw the player HUD to when in battle state
 CSR_POS_SHOP_S  EQU $1801   The cursor position to draw the HUD to when in shop state for shop info
 CSR_POS_SHOP_P  EQU $3401   The cursor position to draw the HUD to when in shop state for player info
@@ -445,7 +445,7 @@ loot_pile_check:
     
 pickup_loot:
     bsr     endl                Line break
-    
+
     move.l  #GOLD,D1            Load gold colour
     bsr     change_font_colour  Change the font colour
     
@@ -906,6 +906,27 @@ draw_battle_info:
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
     
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     player_msg,A1   Load the hud message
+    trap    #15             Display the loaded message
+    
+    move.b  PLA_CLASS,D7    Move the player class number to D7 to display it
+    bsr     display_role    Display the player role
+    
+    * Move the cursor to draw player damage level
+    bsr     next_cursor_pos Move to the next cursor position
+    
+    lea     damage_lvl_msg,A1   Load the damage lvl message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    move.b  PLA_DAMAGE,D1   Move the player damge value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
+    * Move the cursor to draw player health
+    bsr     next_cursor_pos Move to the next cursor position
+    
     lea     health_msg,A1   Load the hud message
     move.b  #14,D0          Move literal 14 for display message trap command
     trap    #15             Display the loaded message
@@ -931,6 +952,30 @@ draw_battle_info:
     trap    #15             Set the cursor position with trap command 11
     clr     D1              Clear D1 of the cursor position
     
+    lea     enemy_msg,A1   Load the hud message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    * Move the cursor to draw enemy level and class
+    bsr     next_cursor_pos Move to the next cursor position
+    
+    lea     level_msg,A1    Load the level message
+    move.b  #14,D0          Move literal 14 for display message trap command
+    trap    #15             Display the loaded message
+    
+    add.w   #1,A5           Move the enemy pointer to its damage level
+    move.b  (A5),D1         Move the enemy damage value to D1 to display
+    move.b  #3,D0           Move literal 3 for display number trap command
+    trap    #15             Display the number in D1
+    
+    add.w   #1,A5           Move the enemy pointer to the enemy's class type
+    move.b  (A5),D7         Move the enemy class type to D7 to display
+    bsr     display_role    Display the enemy role
+    sub.w   #2,A5           Move the enemy pointer back to its root/health
+    
+    * Move the cursor to draw enemy health information
+    bsr     next_cursor_pos Move to the next cursor position
+    
     lea     health_msg,A1 Load the hud message
     move.b  #14,D0              Move literal 14 for display message trap command
     trap    #15                 Display the loaded message
@@ -939,13 +984,6 @@ draw_battle_info:
     move.b  #3,D0           Move literal 3 for display number trap command
     trap    #15             Display the number in D1
     
-    * Move the cursor to draw potion information
-    bsr     next_cursor_pos Move to the next cursor position
-    
-    lea     enemy_knight_msg,A1   Load the hud message
-    move.b  #14,D0          Move literal 14 for display message trap command
-    trap    #15             Display the loaded message
-    
     * Move the cursor back to its previous position
     move.w  D3,D1           Move the previous cursor position back to D1
     move.b  #11,D0          Move the byte #11 to D0 for trap command 11          
@@ -953,6 +991,31 @@ draw_battle_info:
     
     clr     D1              Clear D1 for later use
     
+    rts
+
+display_role
+    CMP.B   #1,D7           Compare the class with 1 (knight)
+    BEQ     display_knight  Branch to display the knight message
+    CMP.B   #2,D7           Compare the class with 2 (mage)
+    BEQ     display_mage    Branch to display the knight message
+    BNE     display_rogue   Branch to display the rogue message
+    
+display_knight:
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     knight_msg,A1   Load the hud message
+    trap    #15             Display the loaded message
+    rts
+    
+display_mage:
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     mage_msg,A1     Load the hud message
+    trap    #15             Display the loaded message
+    rts
+
+display_rogue:
+    move.b  #14,D0          Move literal 14 for display message trap command
+    lea     rogue_msg,A1    Load the hud message
+    trap    #15             Display the loaded message
     rts
 
 *-------------------Draw Shop Info----------------------
@@ -2371,7 +2434,7 @@ setup_enemies:
     * Setup first enemy
     move.b  #3,$6000    Health - Setup the first enemy
     move.b  #1,$6001    Damage/level
-    move.b  #1,$6002    Class type (Knight)
+    move.b  #3,$6002    Class type (Knight)
     move.b  #1,$6003    Alive state (Alive)
     move.w  #$80DE,$6004  Move enemy coordinates
     
@@ -2473,7 +2536,6 @@ pick_role_msg:  dc.b    '1> You wear armour of polished iron, a short sword and 
                 dc.b    'stained to the material. Two knives are fastened to your belt. (Rogue class)',$0D,$0A,0
 input_nums_msg: dc.b    'Enter num between 1 and ',0
 colon_msg:      dc.b    ': ',0
-
 input_error_msg:    dc.b    'Inputted number is outside of range.',$0D,$0A,0
 fake_gamestate_msg: dc.b    'Gamestate doesnt exist',$0D,$0A,0
 knight_role_msg:    dc.b    'You grab your sword and shield, pull a torch from the wall, and leave the room.',$0D,$0A,0
@@ -2511,12 +2573,12 @@ map_win_point_msg:  dc.b    ' = Objective',0
 map_shop_msg:       dc.b    ' = Shop',0
 map_loot_msg:       dc.b    ' = Loot Pile',0
 map_door_msg:       dc.b    ' = Locked Door',0
-encounter_msg:  dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
-combat_msg:     dc.b    '1> Block and Counter.',$0D,$0A
-                dc.b    '2> Cast Magic.',$0D,$0A
-                dc.b    '3> Attack Swiftly.',$0D,$0A
-                dc.b    '4> Try Run.',$0D,$0A
-                dc.b    '5> Drink Health Potion.',$0D,$0A,0
+encounter_msg:      dc.b    'A monster blocks your path, it looks ready to attack!',$0D,$0A,0
+combat_msg:         dc.b    '1> Block and Counter.',$0D,$0A
+                    dc.b    '2> Cast Magic.',$0D,$0A
+                    dc.b    '3> Attack Swiftly.',$0D,$0A
+                    dc.b    '4> Try Run.',$0D,$0A
+                    dc.b    '5> Drink Health Potion.',$0D,$0A,0
 escape_msg:             dc.b    'You escaped the monster!',$0D,$0A,0
 fail_escape_msg:        dc.b    'You try to run, but the monster catches and damages you!',$0D,$0A,0
 both_block_msg:         dc.b    'You both block, No damage is done!',$0D,$0A,0
@@ -2534,20 +2596,23 @@ hit_by_magic_msg:       dc.b    'You try to block the enemies attack, but they c
                         dc.b    'your defense and damages you!',$0D,$0A,0
 hit_by_melee_msg:       dc.b    'You try to charge up a spell, but the enemy lunges forward and damages you!',$0D,$0A,0
 health_msg:             dc.b    'Health: ',0
-enemy_knight_msg:       dc.b    'Enemy Knight',0
-enemy_mage_msg:         dc.b    'Enemy Mage',0
-enemy_rogue_msg:        dc.b    'Enemy Rogue',0
-torch_msg:              dc.b    'Torch Life: ',0
-damage_lvl_msg          dc.b    'Damage lvl: ',0
-inventory_msg:          dc.b    'Inventory:',0
-gold_msg:               dc.b    '- Gold ',0
-key_msg:                dc.b    '- Key ',0
-potions_msg:            dc.b    '- Potion ',0
-torches_msg:            dc.b    '- Torch ',0
-damage_up_msg:          dc.b    '- Damage Upgrades ',0
-battle_won_msg:         dc.b    'The monster collapses at your feet. It is dead!',$0D,$0A,0
-bracket_open_msg:       dc.b    '(',0
-bracket_close_msg:      dc.b    ')',0
+knight_msg:         dc.b    ' Knight ',0
+mage_msg:           dc.b    ' Mage ',0
+rogue_msg:          dc.b    ' Rogue ',0
+enemy_msg:          dc.b    'Enemy',0
+player_msg:         dc.b    'Player',0
+level_msg:          dc.b    'Level ',0
+torch_msg:          dc.b    'Torch Life: ',0
+damage_lvl_msg      dc.b    'Damage lvl: ',0
+inventory_msg:      dc.b    'Inventory:',0
+gold_msg:           dc.b    '- Gold ',0
+key_msg:            dc.b    '- Key ',0
+potions_msg:        dc.b    '- Potion ',0
+torches_msg:        dc.b    '- Torch ',0
+damage_up_msg:      dc.b    '- Damage Upgrades ',0
+battle_won_msg:     dc.b    'The monster collapses at your feet. It is dead!',$0D,$0A,0
+bracket_open_msg:   dc.b    '(',0
+bracket_close_msg:  dc.b    ')',0
 death_msg:          dc.b    'You feel your last breath of air leave your lungs...',$0D,$0A
                     dc.b    'Your knees hit the ground...',$0D,$0A
                     dc.b    'You have died.',$0D,$0A,0
@@ -2557,18 +2622,17 @@ take_potion_msg:    dc.b    'You drink a health potion...',$0D,$0A
                     dc.b    '3 health points restored!',$0D,$0A,0
 no_potions_msg:     dc.b    'You are out of potions.',$0D,$0A,0
 shop_enter_msg:     dc.b    '"Looking to lighten that coin pouch of yours?!"',$0D,$0A,0
-shop_msg:       dc.b    '1> Buy Potion. (5g)',$0D,$0A
-                dc.b    '2> Buy Key. (15g)',$0D,$0A
-                dc.b    '3> Buy Torch. (10g)',$0D,$0A
-                dc.b    '4> Buy Damage Upgrade. (20g)',$0D,$0A
-                dc.b    '5> Leave Shop.',$0D,$0A,0
-leave_shop_msg: dc.b    '"Pleasure doing business with you."',$0D,$0A,0
-buy_item_msg:   dc.b    '"...And its yours!"',$0D,$0A,0
-shop_stock_msg: dc.b    'Shop Stock:',0
-player_msg:     dc.b    'Your Items:',0
-no_money_msg:   dc.b    '"Not enough gold, traveller."',$0D,$0A,0
-no_item_msg:    dc.b    '"Sorry, I dont have any of them left..."',$0D,$0A,0
-no_torch_msg:   dc.b    'The darkness burns...',$0D,$0A,0
+shop_msg:           dc.b    '1> Buy Potion. (5g)',$0D,$0A
+                    dc.b    '2> Buy Key. (15g)',$0D,$0A
+                    dc.b    '3> Buy Torch. (10g)',$0D,$0A
+                    dc.b    '4> Buy Damage Upgrade. (20g)',$0D,$0A
+                    dc.b    '5> Leave Shop.',$0D,$0A,0
+leave_shop_msg:     dc.b    '"Pleasure doing business with you."',$0D,$0A,0
+buy_item_msg:       dc.b    '"...And its yours!"',$0D,$0A,0
+shop_stock_msg:     dc.b    'Shop Stock:',0
+no_money_msg:       dc.b    '"Not enough gold, traveller."',$0D,$0A,0
+no_item_msg:        dc.b    '"Sorry, I dont have any of them left..."',$0D,$0A,0
+no_torch_msg:       dc.b    'The darkness burns...',$0D,$0A,0
 pickup_loot_msg:    dc.b    'You picked up a loot pile',$0D,$0A,0
 pickup_gold_msg:    dc.b    '+ Gold ',0
 pickup_potion_msg:  dc.b    '+ Potion ',0
@@ -2632,6 +2696,7 @@ castle_msg:     dc.b    '                T~~',$0D,$0A
                 dc.b    '  --- -- -/___\- -- --- ',$0D,$0A,0
                 
     end start
+
 
 
 
