@@ -101,7 +101,7 @@ PLA_TORCH   EQU $5FFB       Memory address for player torch life
 
 * Enemy
 FIRST_ENEMY EQU $6000       Memory location of the first enemy
-ENEMY_MAX   EQU 2           Number of enemies in the game
+ENEMY_MAX   EQU 14          Number of enemies in the game
 
 DAMAGE      EQU 1           The number of bytes to move from the enemy before reaching the damage
 CLASS       EQU 2           The number of bytes to move from the enemy before reaching the class
@@ -396,8 +396,6 @@ won_game:
 
     bsr     press_continue  Pause to get input
     bsr     clear_screen    Clear the screen
-    bsr     endl            Break to new line
-    bsr     draw_castle     Draw a castle
     bsr     endl            Break to new line
     move.b  #64,GAME_STATE  Set the game state to end game
     bra     replay          Give the player the option to restart or quit
@@ -713,12 +711,6 @@ draw_graveyard:
     move.b  #14,D0           Move literal 14 for display message trap command
     trap    #15              Display the loaded message
     rts                      Return from the subroutine
-
-draw_castle:
-    lea     castle_msg,A1   Load the castle message
-    move.b  #14,D0          Move literal 14 for display message trap command
-    trap    #15             Display the loaded message
-    rts                     Return from the subroutine
     
 draw_merchant:
     lea     merchant_msg,A1  Load the merchant message
@@ -2346,7 +2338,7 @@ setup_world:
     move.b  #1,$80DB
     
     *Bottom row of room
-    move.b  #4,$80C8    Large monster room with locked door
+    move.b  #4,$80C8    Large monster room
     move.b  #9,$80C9
     move.b  #9,$80CA
     move.b  #0,$80CB    Entrance
@@ -2361,7 +2353,7 @@ setup_world:
     move.b  #3,$80A8
     move.b  #7,$80A9
     move.b  #7,$80AA
-    move.b  #7,$80AB    Locked door
+    move.b  #7,$80AB
     move.b  #6,$80AC
     
     move.b  #2,$80B7    Exit large room leftwards
@@ -2434,36 +2426,218 @@ setup_enemies:
     * Setup first enemy
     move.b  #3,$6000    Health - Setup the first enemy
     move.b  #1,$6001    Damage/level
-    move.b  #3,$6002    Class type (Knight)
+    move.b  #2,$6002    Class type (Mage)
     move.b  #1,$6003    Alive state (Alive)
-    move.w  #$80DE,$6004  Move enemy coordinates
+    move.w  #$80EE,$6004  Move enemy coordinates
     
     * Setup second enemy
-    move.b  #3,$6010    Health - Setup the first enemy
+    move.b  #4,$6010    Health - Setup the first enemy
     move.b  #2,$6011    Damage/level
-    move.b  #1,$6012    Class type (Knight)
+    move.b  #3,$6012    Class type (Rogue)
     move.b  #1,$6013    Alive state (Alive)
-    move.w  #$8155,$6014  Move enemy coordinates
+    move.w  #$80DF,$6014  Move enemy coordinates
+    
+    * Setup Third enemy
+    move.b  #5,$6020    Health - Setup the first enemy
+    move.b  #2,$6021    Damage/level
+    move.b  #2,$6022    Class type (Mage)
+    move.b  #1,$6023    Alive state (Alive)
+    move.w  #$80CD,$6024  Move enemy coordinates
+    
+    * Setup forth enemy
+    move.b  #3,$6030    Health - Setup the first enemy
+    move.b  #1,$6031    Damage/level
+    move.b  #1,$6032    Class type (knight)
+    move.b  #1,$6033    Alive state (Alive)
+    move.w  #$80CB,$6034  Move enemy coordinates
+    
+    * Setup fifth enemy
+    move.b  #4,$6040    Health - Setup the first enemy
+    move.b  #1,$6041    Damage/level
+    move.b  #3,$6042    Class type (Rogue)
+    move.b  #1,$6043    Alive state (Alive)
+    move.w  #$80C9,$6044  Move enemy coordinates
+    
+    * Setup sixth enemy
+    move.b  #4,$6050    Health
+    move.b  #2,$6051    Damage/level
+    move.b  #2,$6052    Class type (Mage)
+    move.b  #1,$6053    Alive state (Alive)
+    move.w  #$80AB,$6054  Move enemy coordinates
+    
+    * Setup seventh enemy
+    move.b  #5,$6060    Health
+    move.b  #2,$6061    Damage/level
+    move.b  #2,$6062    Class type (Mage)
+    move.b  #1,$6063    Alive state (Alive)
+    move.w  #$80B8,$6064  Move enemy coordinates
+    
+    * Setup eighth enemy
+    move.b  #4,$6070    Health
+    move.b  #2,$6071    Damage/level
+    move.b  #1,$6072    Class type (knight)
+    move.b  #1,$6073    Alive state (Alive)
+    move.w  #$8102,$6074  Move enemy coordinates
+    
+    * Setup ninth enemy
+    move.b  #5,$6080    Health
+    move.b  #2,$6081    Damage/level
+    move.b  #1,$6082    Class type (knight)
+    move.b  #1,$6083    Alive state (Alive)
+    move.w  #$8123,$6084  Move enemy coordinates
+    
+    * Setup tenth enemy
+    move.b  #5,$6090    Health
+    move.b  #3,$6091    Damage/level
+    move.b  #3,$6092    Class type (rogue)
+    move.b  #1,$6093    Alive state (Alive)
+    move.w  #$8111,$6094  Move enemy coordinates
+    
+    * Setup eleventh enemy
+    move.b  #6,$60A0    Health
+    move.b  #1,$60A1    Damage/level
+    move.b  #3,$60A2    Class type (Rogue)
+    move.b  #1,$60A3    Alive state (Alive)
+    move.w  #$8143,$60A4  Move enemy coordinates
+    
+    * Setup twelvth enemy
+    move.b  #4,$60B0    Health
+    move.b  #2,$60B1    Damage/level
+    move.b  #1,$60B2    Class type (knight)
+    move.b  #1,$60B3    Alive state (Alive)
+    move.w  #$8135,$60B4  Move enemy coordinates
+    
+    * Setup thirteenth enemy
+    move.b  #6,$60C0    Health
+    move.b  #3,$60C1    Damage/level
+    move.b  #2,$60C2    Class type (Mage)
+    move.b  #1,$60C3    Alive state (Alive)
+    move.w  #$8146,$60C4  Move enemy coordinates
+    
+    * Setup fourteenth enemy
+    move.b  #5,$60D0    Health
+    move.b  #3,$60D1    Damage/level
+    move.b  #3,$60D2    Class type (Rogue)
+    move.b  #1,$60D3    Alive state (Alive)
+    move.w  #$8154,$60D4  Move enemy coordinates
     
     rts
     
 setup_loot:
     * Setup first loot pile
-    move.w  #$80DE,$7000  Move loot coordinates
+    move.w  #$80EE,$7000  Move loot coordinates
     move.b  #1,$7002  Move loot potions
-    move.b  #2,$7003  Move loot keys
-    move.b  #LIFE_PER_TORCH,$7004  Move loot torches
-    move.b  #5,$7005  Move loot gold
+    move.b  #0,$7003  Move loot keys
+    move.b  #0,$7004  Move loot torches
+    move.b  #3,$7005  Move loot gold
     move.b  #1,$7006  Move loot active state
     
     * Setup second loot pile
-    move.w  #$8155,$7010  Move loot coordinates
-    move.b  #3,$7012  Move loot potions
-    move.b  #5,$7013  Move loot keys
-    move.b  #1,$7014  Move loot torches
-    move.b  #2,$7015  Move loot gold
+    move.w  #$80DF,$7010  Move loot coordinates
+    move.b  #0,$7012  Move loot potions
+    move.b  #1,$7013  Move loot keys
+    move.b  #0,$7014  Move loot torches
+    move.b  #5,$7015  Move loot gold
     move.b  #1,$7016  Move loot active state
+    
+    * Setup third loot pile
+    move.w  #$80CD,$7020  Move loot coordinates
+    move.b  #2,$7022  Move loot potions
+    move.b  #0,$7023  Move loot keys
+    move.b  #15,$7024  Move loot torches
+    move.b  #6,$7025  Move loot gold
+    move.b  #1,$7026  Move loot active state
+    
+    * Setup forth loot pile
+    move.w  #$80CB,$7030  Move loot coordinates
+    move.b  #0,$7032  Move loot potions
+    move.b  #0,$7033  Move loot keys
+    move.b  #0,$7034  Move loot torches
+    move.b  #4,$7035  Move loot gold
+    move.b  #1,$7036  Move loot active state
+    
+    * Setup fifth loot pile
+    move.w  #$80C9,$7040  Move loot coordinates
+    move.b  #1,$7042  Move loot potions
+    move.b  #0,$7043  Move loot keys
+    move.b  #4,$7044  Move loot torches
+    move.b  #3,$7045  Move loot gold
+    move.b  #1,$7046  Move loot active state
+    
+    * Setup sixth loot pile
+    move.w  #$80AB,$7050  Move loot coordinates
+    move.b  #1,$7052  Move loot potions
+    move.b  #1,$7053  Move loot keys
+    move.b  #3,$7054  Move loot torches
+    move.b  #3,$7055  Move loot gold
+    move.b  #1,$7056  Move loot active state
+    
+    * Setup seventh loot pile
+    move.w  #$80B8,$7060  Move loot coordinates
+    move.b  #2,$7062  Move loot potions
+    move.b  #0,$7063  Move loot keys
+    move.b  #0,$7064  Move loot torches
+    move.b  #7,$7065  Move loot gold
+    move.b  #1,$7066  Move loot active state
+    
+    * Setup eighth loot pile
+    move.w  #$8102,$7070  Move loot coordinates
+    move.b  #1,$7072  Move loot potions
+    move.b  #0,$7073  Move loot keys
+    move.b  #6,$7074  Move loot torches
+    move.b  #3,$7075  Move loot gold
+    move.b  #1,$7076  Move loot active state
+    
+    * Setup ninth loot pile
+    move.w  #$8123,$7080  Move loot coordinates
+    move.b  #1,$7082  Move loot potions
+    move.b  #0,$7083  Move loot keys
+    move.b  #2,$7084  Move loot torches
+    move.b  #3,$7085  Move loot gold
+    move.b  #1,$7086  Move loot active state
+    
+    * Setup tenth loot pile
+    move.w  #$8111,$7090  Move loot coordinates
+    move.b  #2,$7092  Move loot potions
+    move.b  #0,$7093  Move loot keys
+    move.b  #5,$7094  Move loot torches
+    move.b  #7,$7095  Move loot gold
+    move.b  #1,$7096  Move loot active state
+    
+    * Setup eleventh loot pile
+    move.w  #$8143,$70A0  Move loot coordinates
+    move.b  #0,$70A2  Move loot potions
+    move.b  #0,$70A3  Move loot keys
+    move.b  #0,$70A4  Move loot torches
+    move.b  #2,$70A5  Move loot gold
+    move.b  #1,$70A6  Move loot active state
+    
+    * Setup twelvth loot pile
+    move.w  #$8135,$70B0  Move loot coordinates
+    move.b  #1,$70B2  Move loot potions
+    move.b  #0,$70B3  Move loot keys
+    move.b  #0,$70B4  Move loot torches
+    move.b  #4,$70B5  Move loot gold
+    move.b  #1,$70B6  Move loot active state
+    
+    * Setup thirteenth loot pile
+    move.w  #$8146,$70C0  Move loot coordinates
+    move.b  #0,$70C2  Move loot potions
+    move.b  #0,$70C3  Move loot keys
+    move.b  #12,$70C4  Move loot torches
+    move.b  #19,$70C5  Move loot gold
+    move.b  #1,$70C6  Move loot active state
+    
+    * Setup fourteenth loot pile
+    move.w  #$8154,$70D0  Move loot coordinates
+    move.b  #0,$70D2  Move loot potions
+    move.b  #0,$70D3  Move loot keys
+    move.b  #14,$70D4  Move loot torches
+    move.b  #16,$70D5  Move loot gold
+    move.b  #1,$70D6  Move loot active state
 
+    
+    rts
     
 setup_player:
     move.b  #10,PLAYER      put score/health in memory location $5FF0
@@ -2474,11 +2648,11 @@ setup_player:
     move.b  #0,PLA_CLASS    put class number in memory location $5FF2
     * 1 corresponds to knight - 2 corresponds to mage - 3 corresponds to rogue
     
-    move.b  #100,PLA_GOLD    Assign the player's base gold value
+    move.b  #14,PLA_GOLD    Assign the player's base gold value
     move.b  #1,PLA_POTIONS  Assign the player's base potions value
-    move.b  #3,PLA_KEYS     Assign the player's base keys value
+    move.b  #0,PLA_KEYS     Assign the player's base keys value
     *move.b  #LIFE_PER_TORCH,PLA_TORCH   Assign the player's base torch value
-    move.b  #50,PLA_TORCH   Assign the player's base torch value
+    move.b  #15,PLA_TORCH   Assign the player's base torch value
     
     lea     $814A,A6        Set the player coordinate to the first corridor
     move.w  A6,PLA_P_POS    Set the player's previous position to their current
@@ -2488,17 +2662,17 @@ setup_player:
 setup_shops:
     * Setup the first shop
     move.w  #$80F9,$6500    Set the position
-    move.b  #2,$6502        Set the potions
-    move.b  #3,$6503        Set the keys
-    move.b  #4,$6504        Set the torches
-    move.b  #5,$6505        Set the damage
+    move.b  #3,$6502        Set the potions
+    move.b  #1,$6503        Set the keys
+    move.b  #2,$6504        Set the torches
+    move.b  #2,$6505        Set the damage
     
     * Setup the second shop
     move.w  #$80B2,$6510    Set the position
-    move.b  #4,$6512        Set the potions
-    move.b  #3,$6513        Set the keys
-    move.b  #2,$6514        Set the torches
-    move.b  #1,$6515        Set the damage
+    move.b  #5,$6512        Set the potions
+    move.b  #1,$6513        Set the keys
+    move.b  #3,$6514        Set the torches
+    move.b  #3,$6515        Set the damage
 
     rts
     
@@ -2679,21 +2853,6 @@ merchant_msg:   dc.b    '         ____',$0D,$0A
                 dc.b    ' ||   :   .      \.',$0D,$0A
                 dc.b    ' ||   :  : :      :',$0D,$0A
                 dc.b    ' ||   :__:-:__.;--',$0D,$0A,0
-castle_msg:     dc.b    '                T~~',$0D,$0A
-                dc.b    '                |',$0D,$0A
-                dc.b    '               /"\',$0D,$0A
-                dc.b    '       T~~     |.| T~~',$0D,$0A
-                dc.b    '   T~~ |    T~ WWWW|',$0D,$0A
-                dc.b    '   |  /"\   |  |  |/\T~~',$0D,$0A
-                dc.b    '  /"\ WWW  /"\ |. |WW|',$0D,$0A
-                dc.b    ' WWWWW/\| /   \|./\|/"\',$0D,$0A
-                dc.b    ' |   /__\/]WWW[\/__\WWWW',$0D,$0A
-                dc.b    ' |"  WWWW.|I_I|.WWWW.   |',$0D,$0A
-                dc.b    ' |   |. |/  -  \|. |.  |',$0D,$0A
-                dc.b    ' |.  |  |LI=H=LI|. |   |',$0D,$0A
-                dc.b    ' |   |. | |[_]| |  |.  |',$0D,$0A
-                dc.b    ' |   |  |_|###|_|  |   |',$0D,$0A
-                dc.b    '  --- -- -/___\- -- --- ',$0D,$0A,0
                 
     end start
 
